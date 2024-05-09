@@ -2,19 +2,34 @@ package Catan;
 
 import java.awt.*;
 import java.awt.event.*;
+import java.awt.image.*;
+import java.io.*;
 import java.util.*;
+import javax.imageio.*;
 import javax.swing.*;
 import javax.swing.border.LineBorder;
 
 public class Board extends JFrame implements ActionListener{
 
     public enum RESOURCE {
-        WHEAT,
-        SHEEP, 
-        TIMBER,
-        BRICK,
-        ORE,
-        NONE;
+        WHEAT("Catan/Icons/CatanWheatIcon.png"),
+        SHEEP("Catan/Icons/CatanSheepIcon.png"),
+        TIMBER("Catan/Icons/CatanTimberIcon.png"),
+        BRICK("Catan/Icons/CatanBrickIcon.png"),
+        ORE("Catan/Icons/CatanOreIcon.png"),
+        NONE("Catan/Icons/CatanWheatIcon.png");
+
+        public ImageIcon icon;
+        private RESOURCE (String image_path) {
+            BufferedImage img = null;
+            try {
+                img = ImageIO.read(new File(image_path));
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            Image dimg = img.getScaledInstance(Tile.WIDTH, Tile.HEIGHT, Image.SCALE_DEFAULT);
+            icon = new ImageIcon(dimg);
+        }
     }
 
     public enum DEVELOPMENT {
@@ -30,8 +45,9 @@ public class Board extends JFrame implements ActionListener{
     private Corner corners[][];
     private Road road[][];
     private int resourceLimit, resources[], devCards[];
+    public static Random rn = new Random();
     
-    private JPanel sidebar, bottombar;
+    private JPanel sidebar, bottombar, map;
 
     public Board() {
         //Create gui upon construction of board object
@@ -59,23 +75,37 @@ public class Board extends JFrame implements ActionListener{
         bottombar = new JPanel();
         add(bottombar);
         bottombar.setBounds(0, 450, 640, 150);
-        bottombar.setBackground(Color.decode("#BBBBBB"));
+        bottombar.setBackground(Color.decode("#CCCCCC"));
         bottombar.setLayout(null);
 
 
 
         //Hex tiles
+        map = new JPanel();
+        add(map);
+        map.setBounds(0, 0, 640, 450);
+        map.setBackground(Color.decode("#0099FF"));
+        map.setLayout(null);
+
+        for (int t = 2; t <= 12; t++)
+            tiles[t] = new LinkedList<Tile>();
 
         //First row
-        for (int t = 0; t < 3; t++) {
-            Corner corners[] = new Corner[3];
-            corners[0] = new Corner(); //need to change this to reference the correct corners in this.corners (2d array)
-            corners[2] = new Corner();
-            corners[3] = new Corner();
+        for (int t = 2; t <= 4; t++) {
+            //Adding to staggered matrix
+            Tile tempTile = new Tile(1, t, RESOURCE.values()[rn.nextInt(RESOURCE.values().length)]);
+            tiles[rn.nextInt(11) + 2].add(tempTile); 
 
-            tiles[0].add(new Tile(corners, RESOURCE.BRICK)); //Generate random resources later
+            //Setting up in GUI
+            map.add(tempTile);
+            tempTile.setBackground(Color.decode("#eaecd0"));
+            tempTile.setBounds((Tile.WIDTH - 4)*(t+1), 0, Tile.WIDTH, Tile.HEIGHT);
+            
+        }
 
-            tiles[0].get(t).setBounds(70*(t+1), 0, 70, 70);
+        //Second row
+        for (int t = 0; t < 4; t++) {
+
         }
 
 
