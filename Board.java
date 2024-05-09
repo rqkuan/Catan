@@ -90,25 +90,24 @@ public class Board extends JFrame implements ActionListener{
         for (int t = 2; t <= 12; t++)
             tiles[t] = new LinkedList<Tile>();
 
-        //First row
-        for (int t = 2; t <= 4; t++) {
-            //Adding to staggered matrix
-            Tile tempTile = new Tile(1, t, RESOURCE.values()[rn.nextInt(RESOURCE.values().length)]);
+        makeTileRow(0, 1, 3);
+        makeTileRow(1, 0, 3);
+        makeTileRow(2, 0, 4);
+        makeTileRow(3, 0, 3);
+        makeTileRow(4, 1, 3);
+
+    }
+
+    public void makeTileRow(int row, int first_column, int last_column) {
+        for (int column = first_column; column <= last_column; column++) {
+            Tile tempTile = new Tile(row, column, RESOURCE.values()[rn.nextInt(RESOURCE.values().length)]);
             tiles[rn.nextInt(11) + 2].add(tempTile); 
 
             //Setting up in GUI
             map.add(tempTile);
-            tempTile.setBackground(Color.decode("#eaecd0"));
-            tempTile.setBounds((Tile.WIDTH - 4)*(t+1), 0, Tile.WIDTH, Tile.HEIGHT);
-            
+            tempTile.setBounds((Tile.WIDTH - 4)*column + (int)(0.5 * (row%2) * (Tile.WIDTH - 4)), 
+                                (int)((Tile.HEIGHT*1.5 - 6)*row/2.0), Tile.WIDTH, Tile.HEIGHT);
         }
-
-        //Second row
-        for (int t = 0; t < 4; t++) {
-
-        }
-
-
     }
 
     @Override

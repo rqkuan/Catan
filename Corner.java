@@ -2,7 +2,7 @@ package Catan;
 
 import javax.swing.*;
 
-public class Corner extends JButton{
+public class Corner extends JButton {
 
     public enum STRUCTURE {
         SETTLEMENT(1),
