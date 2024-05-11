@@ -1,20 +1,18 @@
 package Catan;
 
 import javax.swing.*;
-import javax.swing.border.*;
-import java.awt.*;
+
 
 public class Tile extends JPanel {
 
     private Corner corners[] = new Corner[6];
     private Board.RESOURCE resource;
     public boolean thief = false;
-    public static final int WIDTH = 78, HEIGHT = 90;
+    public static final int WIDTH = 94, HEIGHT = 108;
     private int row, column;
 
     public Tile(int row, int column, Board.RESOURCE resource) {
         setOpaque(false);
-        setBackground(Color.decode("#eaecd0"));
         setLayout(null);
         
         //Hex Image
