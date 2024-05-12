@@ -1,50 +1,16 @@
 package Catan;
 
-import java.io.*;
-import javax.imageio.*;
 import javax.swing.*;
-import java.awt.*;
-import java.awt.image.*;
 
 
 public class Road extends JPanel {
 
     public boolean owned;
-    public static ImageIcon roadSlantUp;
-    static {
-        BufferedImage img = null;
-        try {
-            img = ImageIO.read(new File("Catan/Icons/CatanRoadSlantUp.png"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        int actualtw = (Tile.WIDTH - Tile.WIDTH/20);
-        Image dimg = img.getScaledInstance(actualtw/2, (int)(actualtw/2 * 0.577), Image.SCALE_DEFAULT);
-        roadSlantUp = new ImageIcon(dimg);
-    }
-    public static ImageIcon roadSlantDown;
-    static {
-        BufferedImage img = null;
-        try {
-            img = ImageIO.read(new File("Catan/Icons/CatanRoadSlantDown.png"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        int actualtw = (Tile.WIDTH - Tile.WIDTH/20);
-        Image dimg = img.getScaledInstance(actualtw/2, (int)(actualtw/2 * 0.577), Image.SCALE_DEFAULT);
-        roadSlantDown = new ImageIcon(dimg);
-    }
-    public static ImageIcon roadVertical;
-    static {
-        BufferedImage img = null;
-        try {
-            img = ImageIO.read(new File("Catan/Icons/CatanRoadVertical.png"));
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        Image dimg = img.getScaledInstance(6, (Tile.WIDTH - Tile.WIDTH/20)/2, Image.SCALE_DEFAULT);
-        roadVertical = new ImageIcon(dimg);
-    }
+    public static ImageIcon roadSlantUp = Catan.getResizedIcon((Tile.WIDTH - Tile.WIDTH/20)/2, 
+                                        (int)((Tile.WIDTH - Tile.WIDTH/20)/2 * 0.577), "Catan/Icons/CatanRoadSlantUp.png");
+    public static ImageIcon roadSlantDown = Catan.getResizedIcon((Tile.WIDTH - Tile.WIDTH/20)/2, 
+                                        (int)((Tile.WIDTH - Tile.WIDTH/20)/2 * 0.577), "Catan/Icons/CatanRoadSlantDown.png");
+    public static ImageIcon roadVertical = Catan.getResizedIcon(6, (Tile.WIDTH - Tile.WIDTH/20)/2, "Catan/Icons/CatanRoadVertical.png");
 
 
     public Road(ImageIcon roadImage) {

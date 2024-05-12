@@ -20,14 +20,7 @@ public class Board extends JFrame implements ActionListener{
 
         public ImageIcon icon;
         private RESOURCE (String image_path) {
-            BufferedImage img = null;
-            try {
-                img = ImageIO.read(new File(image_path));
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            Image dimg = img.getScaledInstance(Tile.WIDTH, Tile.HEIGHT, Image.SCALE_DEFAULT);
-            icon = new ImageIcon(dimg);
+            icon = Catan.getResizedIcon(Tile.WIDTH, Tile.HEIGHT, image_path);
         }
     }
 
