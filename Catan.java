@@ -19,7 +19,7 @@ public class Catan {
         return new ImageIcon(bimg.getScaledInstance(width, height, Image.SCALE_DEFAULT));
     }
 
-    public static void changeIconColor(ImageIcon icon, Color color) {
+    public static ImageIcon changeIconColor(ImageIcon icon, Color color) {
         Image img = icon.getImage();
         BufferedImage bimg = new BufferedImage(img.getWidth(null), img.getHeight(null), BufferedImage.TYPE_INT_ARGB);
         Graphics2D bGr = bimg.createGraphics();
@@ -33,7 +33,7 @@ public class Catan {
                 bimg.setRGB(x, y, colorShift.getRGB());
             }
         }
-        icon = new ImageIcon(bimg);
+        return new ImageIcon(bimg);
     }
 
     public static void main(String[] args) {
