@@ -1,18 +1,23 @@
 package Catan;
 
+import java.awt.*;
 import java.util.*;
 
 public class Player {
 
     private LinkedList<Corner> accessibleCorners = new LinkedList<Corner>();
-    private HashMap<Corner, LinkedList<Corner>> adj = new HashMap<Corner, LinkedList<Corner>>();
     private int[] devCards = new int[Board.DEVELOPMENT.values().length];
     private int[] resources = new int[Board.RESOURCE.values().length];
     private int settlements = 4, cities = 4;
     private boolean developed = false;
+    private Color color;
 
-    public Player() {
+    public Player(Color color) {
+        this.color = color;
+    }
 
+    public Color getColor() {
+        return color;
     }
 
     public LinkedList<Road> buildRoad(Board board) {
@@ -47,8 +52,12 @@ public class Player {
 
     }
 
-    public void connectCorner(Corner c1, Corner c2) {
-        
+    public void addResource(Board.RESOURCE resource, int amount) {
+        resources[resource.ordinal()] += amount;
+    }
+
+    public void addCorner(Corner c) {
+        accessibleCorners.add(c);
     }
 
 }

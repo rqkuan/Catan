@@ -2,29 +2,30 @@ package Catan;
 
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.image.*;
-import java.io.*;
 import java.util.*;
-import javax.imageio.*;
 import javax.swing.*;
 
-public class Board extends JFrame implements ActionListener{
+public class Board extends JFrame{
 
-    public enum RESOURCE {
-        WHEAT("Catan/Icons/CatanWheatIcon.png"),
-        SHEEP("Catan/Icons/CatanSheepIcon.png"),
-        TIMBER("Catan/Icons/CatanTimberIcon.png"),
-        BRICK("Catan/Icons/CatanBrickIcon.png"),
-        ORE("Catan/Icons/CatanOreIcon.png"),
-        NONE("Catan/Icons/CatanWheatIcon.png");
+    public static enum RESOURCE {
+        WHEAT("Catan/Icons/CatanWheat.png"),
+        SHEEP("Catan/Icons/CatanSheep.png"),
+        TIMBER("Catan/Icons/CatanTimber.png"),
+        BRICK("Catan/Icons/CatanBrick.png"),
+        ORE("Catan/Icons/CatanOre.png"),
+        NONE("Catan/Icons/CatanWheat.png");
 
         public ImageIcon icon;
         private RESOURCE (String image_path) {
             icon = Catan.getResizedIcon(Tile.WIDTH, Tile.HEIGHT, image_path);
         }
+
+        static {
+            NONE.icon = Catan.changeIconColor(NONE.icon, new Color(0, 0, 0));
+        }
     }
 
-    public enum DEVELOPMENT {
+    public static enum DEVELOPMENT {
         KNIGHT, 
         VICTORY_POINT,
         ROAD_BUILDING,
@@ -33,11 +34,13 @@ public class Board extends JFrame implements ActionListener{
     }
 
     public ArrayList<Player> players = new ArrayList<Player>();
+    public static final Player NOBODY = new Player(new Color(0, 0, 0, 0));
     private LinkedList<Tile> tiles[] = new LinkedList[13];
-    private Corner corners[][] = new Corner[100][100]; //Organize later
-    private Road roads[][] = new Road[100][100]; //Organize later
-    private int resourceLimit, resources[], devCards[];
+    public Corner corners[][] = new Corner[6][12]; //Organize later
+    private Road roads[][] = new Road[11][10]; //Organize later
+    private int resourceLimit, resources[], devCards[], curPlayerIndex = 0;
     public static Random rn = new Random();
+    private static final int mapXOffset = 88, mapYOffset = 15;
     
     private JPanel sidebar, bottombar, map;
 
@@ -114,19 +117,21 @@ public class Board extends JFrame implements ActionListener{
     public void makeTileRow(int row, int first_column, int last_column) {
         for (int column = first_column; column <= last_column; column++) {
             Tile tempTile = new Tile(row, column, RESOURCE.values()[rn.nextInt(RESOURCE.values().length)]);
-            tiles[rn.nextInt(11) + 2].add(tempTile); 
+            int num = rn.nextInt(11) + 2;
+            tiles[num].add(tempTile); 
+            tempTile.button.setText(""+num);
 
             //Setting up in GUI
             map.add(tempTile);
             int x = (Tile.WIDTH - Tile.WIDTH/20)*column - (int)(0.5 * (row%2) * (Tile.WIDTH - 4));
             int y = (int)((Tile.HEIGHT*1.5 - Tile.HEIGHT/15)*row/2.0);
-            tempTile.setBounds(40+x, 15+y, Tile.WIDTH, Tile.HEIGHT);
+            tempTile.setBounds(mapXOffset+x, mapYOffset+y, Tile.WIDTH, Tile.HEIGHT);
         }
     }
 
     public void makeCornerRow(int row, int first_column, int last_column) {
         for (int column = first_column; column <= last_column; column++) {
-            Corner tempCorner = new Corner(row, column);
+            Corner tempCorner = new Corner(this, row, column);
             corners[row][column] = tempCorner; 
 
             //Setting up in GUI
@@ -140,7 +145,7 @@ public class Board extends JFrame implements ActionListener{
             if (column % 2 == 1)
                 y -= (Tile.HEIGHT - Tile.HEIGHT/15)/4; //Offsetting the corner accordingly
             
-            tempCorner.setBounds(40+x-Corner.RADIUS, 15+y-Corner.RADIUS, Corner.RADIUS*2, Corner.RADIUS*2);
+            tempCorner.setBounds(mapXOffset+x-Corner.RADIUS, mapYOffset+y-Corner.RADIUS, Corner.RADIUS*2, Corner.RADIUS*2);
             map.setComponentZOrder(tempCorner, 0);
         }
     }
@@ -167,7 +172,7 @@ public class Board extends JFrame implements ActionListener{
                 y -= (Tile.HEIGHT - Tile.HEIGHT/15)*3/8; //Offsetting the road accordingly
                 
                 int actualtw = (Tile.WIDTH - Tile.WIDTH/20);
-                tempRoad.setBounds(40+x-actualtw/2/2, 15+y-(int)(actualtw/2 * 0.577)/2, actualtw/2, (int)(actualtw/2 * 0.577));
+                tempRoad.setBounds(mapXOffset+x-actualtw/2/2, mapYOffset+y-(int)(actualtw/2 * 0.577)/2, actualtw/2, (int)(actualtw/2 * 0.577));
                 map.setComponentZOrder(tempRoad, 0);
             }
         } else {
@@ -181,18 +186,12 @@ public class Board extends JFrame implements ActionListener{
                 int x = (Tile.WIDTH - Tile.WIDTH/20)*column - (int)(0.5 * ((row/2)%2) * (Tile.WIDTH - 4)) + Tile.WIDTH/2; //Finding position of tile
                 x -= (Tile.WIDTH - Tile.WIDTH/20)/2; //Offsetting the road accordingly
 
-                int y = (int)((Tile.HEIGHT*1.5 - Tile.HEIGHT/15)*(row/2)/2.0) + Tile.HEIGHT/2; //Finding position of tile
+                int y = (int)((Tile.HEIGHT*1.5 - Tile.HEIGHT/mapYOffset)*(row/2)/2.0) + Tile.HEIGHT/2; //Finding position of tile
                 
-                tempRoad.setBounds(40+x-3, 15+y-(Tile.HEIGHT-Tile.HEIGHT/10)/4, 6, (Tile.HEIGHT-Tile.HEIGHT/10)/2);
+                tempRoad.setBounds(mapXOffset+x-3, mapYOffset+y-(Tile.HEIGHT-Tile.HEIGHT/10)/4, 6, (Tile.HEIGHT-Tile.HEIGHT/10)/2);
                 map.setComponentZOrder(tempRoad, 0);
             }
         }
-    }
-
-    @Override
-    public void actionPerformed(ActionEvent e) {
-        //Processing button presses
-
     }
 
     public void build(Corner corner, Corner.STRUCTURE structure, Player player) {
@@ -205,11 +204,23 @@ public class Board extends JFrame implements ActionListener{
     }
 
     public void rollDice() {
-
+        int roll = rn.nextInt(6)+1 + rn.nextInt(6)+1;
+        for (Tile t : tiles[roll]) {
+            for (Corner c : t.getCorners()) {
+                c.getOwner().addResource(t.getResource(), c.getStructure().generateAmount);
+            }
+        }
     }
 
-    public void draw() {
+    public void nextPlayer() {
+        curPlayerIndex++;
+        curPlayerIndex %= players.size()*2;
+    }
 
+    public Player getCurPlayer() {
+        if (curPlayerIndex < players.size())
+            return players.get(curPlayerIndex);
+        return players.get(players.size()*2 - curPlayerIndex - 1);
     }
 
 }

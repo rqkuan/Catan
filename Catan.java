@@ -3,7 +3,6 @@ package Catan;
 import java.io.*;
 import javax.imageio.*;
 import javax.swing.*;
-
 import java.awt.*;
 import java.awt.image.*;
 
@@ -38,6 +37,9 @@ public class Catan {
 
     public static void main(String[] args) {
         Board b = new Board();
+        b.players.add(new Player(new Color(255, 0, 0)));
+        b.players.add(new Player(new Color(0, 255, 0)));
+        b.players.add(new Player(new Color(0, 0, 255)));
     }
 
 }

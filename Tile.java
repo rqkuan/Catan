@@ -10,6 +10,7 @@ public class Tile extends JPanel {
     public boolean thief = false;
     public static final int WIDTH = 94, HEIGHT = 108;
     private int row, column;
+    public JButton button = new JButton();
 
     public Tile(int row, int column, Board.RESOURCE resource) {
         setOpaque(false);
@@ -21,11 +22,10 @@ public class Tile extends JPanel {
         iconDisplay.setBounds(0, 0, WIDTH, HEIGHT);
 
         //Number display and button for thief placement
-        TileButton tb = new TileButton();
-        add(tb);
-        tb.setOpaque(true);
-        tb.setBounds(WIDTH/2 - 13, HEIGHT/2 - 13, 26, 26);
-        setComponentZOrder(tb, 0);
+        add(button);
+        button.setOpaque(true);
+        button.setBounds(WIDTH/2 - 13, HEIGHT/2 - 13, 26, 26);
+        setComponentZOrder(button, 0);
 
         validate();
 

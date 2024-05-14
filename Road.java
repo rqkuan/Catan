@@ -1,7 +1,6 @@
 package Catan;
 
 import javax.swing.*;
-import java.awt.Color;
 
 
 public class Road extends JPanel {
@@ -11,17 +10,18 @@ public class Road extends JPanel {
                                         (int)((Tile.WIDTH - Tile.WIDTH/20)/2 * 0.577), "Catan/Icons/CatanRoadSlantUp.png");
     public static ImageIcon roadSlantDown = Catan.getResizedIcon((Tile.WIDTH - Tile.WIDTH/20)/2, 
                                         (int)((Tile.WIDTH - Tile.WIDTH/20)/2 * 0.577), "Catan/Icons/CatanRoadSlantDown.png");
-    public static ImageIcon roadVertical = Catan.getResizedIcon(6, (Tile.WIDTH - Tile.WIDTH/20)/2, "Catan/Icons/CatanRoadVertical.png");
+    public static ImageIcon roadVertical = Catan.getResizedIcon(6, (Tile.HEIGHT - Tile.HEIGHT/15)/2, "Catan/Icons/CatanRoadVertical.png");
+    private ImageIcon icon;
 
-    public Road(ImageIcon roadImage) {
+    public Road(ImageIcon icon) {
+        this.icon = icon;
         setOpaque(false);
         setLayout(null);
         
         //Road Image
-        JLabel iconDisplay = new JLabel(roadImage);
+        JLabel iconDisplay = new JLabel();
         add(iconDisplay);
-        iconDisplay.setBounds(0, 0, roadImage.getIconWidth(), roadImage.getIconHeight());
-        //iconDisplay.setIcon(Catan.changeIconColor(roadImage, new Color(255, 0, 0)));
+        iconDisplay.setBounds(0, 0, icon.getIconWidth(), icon.getIconHeight());
 
         // //Button for road placement
         // TileButton tb = new TileButton();
