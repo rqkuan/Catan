@@ -1,7 +1,6 @@
 package Catan;
 
 import java.awt.*;
-import java.awt.event.*;
 import java.util.*;
 import javax.swing.*;
 
@@ -33,11 +32,12 @@ public class Board extends JFrame{
         MONOPOLY;
     }
 
+    public Corner recentBuild;
     public ArrayList<Player> players = new ArrayList<Player>();
     public static final Player NOBODY = new Player(new Color(0, 0, 0, 0));
     private LinkedList<Tile> tiles[] = new LinkedList[13];
     public Corner corners[][] = new Corner[6][12]; //Organize later
-    private Road roads[][] = new Road[11][10]; //Organize later
+    private Road roads[][] = new Road[11][11]; //Organize later
     private int resourceLimit, resources[], devCards[], curPlayerIndex = 0;
     public static Random rn = new Random();
     private static final int mapXOffset = 88, mapYOffset = 15;
@@ -93,15 +93,15 @@ public class Board extends JFrame{
 
         makeRoadRow(0, 2, 7);
         makeRoadRow(1, 1, 4);
-        makeRoadRow(2, 1, 8);
+        makeRoadRow(2, 2, 9);
         makeRoadRow(3, 1, 5);
         makeRoadRow(4, 0, 9);
         makeRoadRow(5, 0, 5);
-        makeRoadRow(6, 0, 9);
+        makeRoadRow(6, 1, 10);
         makeRoadRow(7, 1, 5);
         makeRoadRow(8, 1, 8);
         makeRoadRow(9, 1, 4);
-        makeRoadRow(10, 2, 7);
+        makeRoadRow(10, 3, 8);
         map.validate();
 
         makeCornerRow(0, 2, 8); 
@@ -155,17 +155,17 @@ public class Board extends JFrame{
             //Zigzagging roads
             for (int column = first_column; column <= last_column; column++) {
                 Road tempRoad;
-                if ((column + row/2) % 2 == 0) //Slanted roads with the same Road-column and Tile-row parity slant up
-                    tempRoad = new Road(Road.roadSlantUp);
-                else //The others slant down
-                    tempRoad = new Road(Road.roadSlantDown);
+                if (column % 2 == 0) //Even-columned roads slant up
+                    tempRoad = new Road(Road.roadSlantUp, this);
+                else //Odd-columned roads slant down
+                    tempRoad = new Road(Road.roadSlantDown, this);
                 roads[row][column] = tempRoad; 
 
                 //Setting up in GUI
                 map.add(tempRoad);
-                int x = (Tile.WIDTH - Tile.WIDTH/20)*(column/2) - (int)(0.5 * (row%2) * (Tile.WIDTH - 4)) + Tile.WIDTH/2; //Finding position of tile
+                int x = (Tile.WIDTH - Tile.WIDTH/20)*(column/2) - (int)(0.5 * ((row/2)%2) * (Tile.WIDTH - 4)) + Tile.WIDTH/2; //Finding position of tile
                 x += (Tile.WIDTH - Tile.WIDTH/20)/4;
-                if (column% 2 == 0)
+                if (column % 2 == 0)
                     x -= (Tile.WIDTH - Tile.WIDTH/20)/2; //Offsetting the road accordingly
 
                 int y = (int)((Tile.HEIGHT*1.5 - Tile.HEIGHT/15)*row/2/2.0) + Tile.HEIGHT/2; //Finding position of tile
@@ -173,12 +173,16 @@ public class Board extends JFrame{
                 
                 int actualtw = (Tile.WIDTH - Tile.WIDTH/20);
                 tempRoad.setBounds(mapXOffset+x-actualtw/2/2, mapYOffset+y-(int)(actualtw/2 * 0.577)/2, actualtw/2, (int)(actualtw/2 * 0.577));
+                tempRoad.button.setBounds(tempRoad.getWidth()/2 - 10, tempRoad.getHeight()/2 - 10, 20, 20);
+                tempRoad.iconDisplay.setBounds(tempRoad.getWidth()/2 - tempRoad.icon.getIconWidth()/2, 
+                                                tempRoad.getHeight()/2 - tempRoad.icon.getIconHeight()/2, 
+                                                tempRoad.icon.getIconWidth(), tempRoad.icon.getIconHeight());
                 map.setComponentZOrder(tempRoad, 0);
             }
         } else {
             //Vertical Roads
             for (int column = first_column; column <= last_column; column++) {
-                Road tempRoad = new Road(Road.roadVertical);
+                Road tempRoad = new Road(Road.roadVertical, this);
                 roads[row][column] = tempRoad; 
 
                 //Setting up in GUI
@@ -188,15 +192,111 @@ public class Board extends JFrame{
 
                 int y = (int)((Tile.HEIGHT*1.5 - Tile.HEIGHT/mapYOffset)*(row/2)/2.0) + Tile.HEIGHT/2; //Finding position of tile
                 
-                tempRoad.setBounds(mapXOffset+x-3, mapYOffset+y-(Tile.HEIGHT-Tile.HEIGHT/10)/4, 6, (Tile.HEIGHT-Tile.HEIGHT/10)/2);
+                tempRoad.setBounds(mapXOffset+x-10, mapYOffset+y-(Tile.HEIGHT-Tile.HEIGHT/10)/4, 20, (Tile.HEIGHT-Tile.HEIGHT/10)/2);
+                tempRoad.button.setBounds(tempRoad.getWidth()/2 - 10, tempRoad.getHeight()/2 - 10, 20, 20);
+                tempRoad.iconDisplay.setBounds(tempRoad.getWidth()/2 - tempRoad.icon.getIconWidth()/2, 
+                                                tempRoad.getHeight()/2 - tempRoad.icon.getIconHeight()/2, 
+                                                tempRoad.icon.getIconWidth(), tempRoad.icon.getIconHeight());
                 map.setComponentZOrder(tempRoad, 0);
             }
         }
     }
 
-    public void build(Corner corner, Corner.STRUCTURE structure, Player player) {
-        //helper method to build roads and structures
+    public void offerStartingBuild() throws InterruptedException {
+        for (Corner[] cs : corners) {
+            for (Corner c : cs) {
+                if (c == null)
+                    continue;
+                if (c.isEnabled()) {
+                    c.buildable = true;
+                    c.setVisible(true);
+                }
+            }
+        }
 
+        Catan.semaphore.acquire();
+
+        for (Corner[] cs : corners) {
+            for (Corner c : cs) {
+                if (c == null)
+                    continue;
+                c.buildable = false;
+                if (c.getOwner() == null)
+                    c.setVisible(false);
+            }
+        }
+
+        //Build the road here too
+        
+        //Vertical road connection
+        Road r1 = null;
+        try {
+            int column = recentBuild.getColumn();
+            int row = recentBuild.getRow();
+            if (column % 2 == 1) {
+                //Connects upwards
+
+                //Navigating around the staggered coordinate system
+                if (row % 2 == 0) 
+                    r1 = roads[2*row-1][column/2 + 1];
+                else 
+                    r1 = roads[2*row-1][column/2];
+            } else {
+                //Connects downwards
+                r1 = roads[2*row+1][column/2];
+            }
+            if (r1 != null) {
+                r1.button.setVisible(true);
+                r1.setVisible(true);
+                r1.buildable = true;
+            }
+        } catch (IndexOutOfBoundsException excpt) {}
+
+        //Road to the right
+        Road r2 = null;
+        try {
+            r2 = roads[recentBuild.getRow()*2][recentBuild.getColumn()];
+            if (r2 != null) {
+                r2.button.setVisible(true);
+                r2.setVisible(true);
+                r2.buildable = true;
+            }
+        } catch (IndexOutOfBoundsException excpt) {}
+        
+        //Road to the left
+        Road r3 = null;
+        try {
+            r3 = roads[recentBuild.getRow()*2][recentBuild.getColumn()-1];
+            if (r3 != null) {
+                r3.button.setVisible(true);
+                r3.setVisible(true);
+                r3.buildable = true;
+            }
+        } catch (IndexOutOfBoundsException excpt) {}
+
+        Catan.semaphore.acquire();
+
+        if (r1 != null) {
+            r1.button.setVisible(false);
+            if (r1.buildable) {
+                r1.setVisible(false);
+                r1.buildable = false;
+            }
+        }
+        if (r2 != null) {
+            r2.button.setVisible(false);
+            if (r2.buildable) {
+                r2.setVisible(false);
+                r2.buildable = false;
+            }
+        }
+        if (r3 != null) {
+            r3.button.setVisible(false);
+            if (r3.buildable) {
+                r3.setVisible(false);
+                r3.buildable = false;
+            }
+        }
     }
 
     public Corner getCorner(int row, int column) {
