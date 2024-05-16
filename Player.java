@@ -57,7 +57,9 @@ public class Player {
     }
 
     public void addCorner(Corner c) {
-        accessibleCorners.add(c);
+        if (!accessibleCorners.contains(c)) {
+            accessibleCorners.add(c);
+        }
     }
 
 }

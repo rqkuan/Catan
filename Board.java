@@ -156,9 +156,9 @@ public class Board extends JFrame{
             for (int column = first_column; column <= last_column; column++) {
                 Road tempRoad;
                 if (column % 2 == 0) //Even-columned roads slant up
-                    tempRoad = new Road(Road.roadSlantUp, this);
+                    tempRoad = new Road(Road.roadSlantUp, this, row, column);
                 else //Odd-columned roads slant down
-                    tempRoad = new Road(Road.roadSlantDown, this);
+                    tempRoad = new Road(Road.roadSlantDown, this, row, column);
                 roads[row][column] = tempRoad; 
 
                 //Setting up in GUI
@@ -182,7 +182,7 @@ public class Board extends JFrame{
         } else {
             //Vertical Roads
             for (int column = first_column; column <= last_column; column++) {
-                Road tempRoad = new Road(Road.roadVertical, this);
+                Road tempRoad = new Road(Road.roadVertical, this, row, column);
                 roads[row][column] = tempRoad; 
 
                 //Setting up in GUI
@@ -227,12 +227,13 @@ public class Board extends JFrame{
         }
 
         //Build the road here too
-        
+        int column = recentBuild.getColumn();
+        int row = recentBuild.getRow();
+
         //Vertical road connection
         Road r1 = null;
         try {
-            int column = recentBuild.getColumn();
-            int row = recentBuild.getRow();
+            
             if (column % 2 == 1) {
                 //Connects upwards
 
@@ -255,7 +256,7 @@ public class Board extends JFrame{
         //Road to the right
         Road r2 = null;
         try {
-            r2 = roads[recentBuild.getRow()*2][recentBuild.getColumn()];
+            r2 = roads[row*2][column];
             if (r2 != null) {
                 r2.button.setVisible(true);
                 r2.setVisible(true);
@@ -266,7 +267,7 @@ public class Board extends JFrame{
         //Road to the left
         Road r3 = null;
         try {
-            r3 = roads[recentBuild.getRow()*2][recentBuild.getColumn()-1];
+            r3 = roads[row*2][column-1];
             if (r3 != null) {
                 r3.button.setVisible(true);
                 r3.setVisible(true);
@@ -276,6 +277,7 @@ public class Board extends JFrame{
 
         Catan.semaphore.acquire();
 
+        //Reseting roads;
         if (r1 != null) {
             r1.button.setVisible(false);
             if (r1.buildable) {
