@@ -20,31 +20,21 @@ public class Player {
         return color;
     }
 
-    public LinkedList<Road> buildRoad(Board board) {
-        LinkedList<Road> buildable = new LinkedList<Road>();
-        
+    public void buildRoad(Board board) {
         //Find the roads locations that the player can build at
 
-
-        return buildable;
     }
 
-    public LinkedList<Corner> buildSettlement(Board board) {
-        LinkedList<Corner> buildable = new LinkedList<Corner>();
-        
+    public void buildSettlement(Board board) {
         //Find the corners that the player can build a settlement at
 
 
-        return buildable;
     }
 
-    public LinkedList<Corner> buildCity(Board board) {
-        LinkedList<Corner> buildable = new LinkedList<Corner>();
-        
+    public void buildCity(Board board) {
         //Find the corners that the player can build a city at
 
 
-        return buildable;
     }
 
     public void trade(Player player, int[] give, int [] receive) {
@@ -62,4 +52,7 @@ public class Player {
         }
     }
 
+    public LinkedList<Corner> getAccessibleCorners() {
+        return accessibleCorners;
+    }
 }

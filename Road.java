@@ -46,6 +46,7 @@ public class Road extends JPanel {
                 if (!road.buildable)
                     return;
                 road.buildable = false;
+                road.button.setEnabled(false);
                 road.iconDisplay.setIcon(Catan.changeIconColor(road.icon, board.getCurPlayer().getColor()));
                 
                 //Road functionality (update player's accessible corners)
