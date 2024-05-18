@@ -45,6 +45,11 @@ public class Catan {
         b.players.add(new Player(new Color(0, 255, 0)));
         b.players.add(new Player(new Color(0, 0, 255)));
         
+        b.buildRoadButton.setEnabled(false);
+        b.buildSettlementButton.setEnabled(false);
+        b.buildCityButton.setEnabled(false);
+        b.rollDiceButton.setEnabled(false);
+        b.endTurnButton.setEnabled(false);
         for (; b.curPlayerIndex < b.players.size(); b.curPlayerIndex++) 
             b.offerStartingBuild();
         for (b.curPlayerIndex--; b.curPlayerIndex >= 0; b.curPlayerIndex--) {
@@ -90,6 +95,7 @@ public class Catan {
             }
         }
         b.curPlayerIndex = 0;
+        b.rollDiceButton.setEnabled(true);
     }
 
 }

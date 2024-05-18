@@ -46,7 +46,8 @@ public class Board extends JFrame{
     public static Random rn = new Random();
     private static final int mapXOffset = 88, mapYOffset = 15;
 
-    private JPanel sidebar, bottombar, map;
+    public JPanel sidebar, bottombar, map;
+    public JButton buildRoadButton, buildSettlementButton, buildCityButton, rollDiceButton, endTurnButton;
 
     public Board() {
         //Create gui upon construction of board object
@@ -121,9 +122,9 @@ public class Board extends JFrame{
         int buildButtonWidth = 100;
         int buildButtonHeight = 60;
 
-        JButton buildRoadButton = new JButton();
-        JButton buildSettlementButton = new JButton();
-        JButton buildCityButton = new JButton();
+        buildRoadButton = new JButton();
+        buildSettlementButton = new JButton();
+        buildCityButton = new JButton();
 
         bottombar.add(buildRoadButton);
         buildRoadButton.setBounds(bottombar.getWidth() - 3*(buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
@@ -164,6 +165,37 @@ public class Board extends JFrame{
             }
         });
 
+        //Dice Roll Button
+        rollDiceButton = new JButton();
+        sidebar.add(rollDiceButton);
+        rollDiceButton.setBounds(5, 450 + (bottombar.getHeight() - buildButtonHeight)/2, (sidebar.getWidth() - 15)/2, buildButtonHeight);
+        rollDiceButton.setText("Roll Dice");
+        rollDiceButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                rollDice();
+                buildRoadButton.setEnabled(true);
+                buildSettlementButton.setEnabled(true);
+                buildCityButton.setEnabled(true);
+                rollDiceButton.setEnabled(false);
+                endTurnButton.setEnabled(true);
+            }
+        });
+
+        //End Turn Button
+        endTurnButton = new JButton();
+        sidebar.add(endTurnButton);
+        endTurnButton.setBounds(5 + (sidebar.getWidth() - 15)/2 + 5, 450 + (bottombar.getHeight() - buildButtonHeight)/2, (sidebar.getWidth() - 15)/2, buildButtonHeight);
+        endTurnButton.setText("End Turn");
+        endTurnButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                nextPlayer();
+                buildRoadButton.setEnabled(false);
+                buildSettlementButton.setEnabled(false);
+                buildCityButton.setEnabled(false);
+                rollDiceButton.setEnabled(true);
+                endTurnButton.setEnabled(false);
+            }
+        });
     }
 
     public void makeTileRow(int row, int first_column, int last_column) {
@@ -379,9 +411,18 @@ public class Board extends JFrame{
 
     public void rollDice() {
         int roll = rn.nextInt(6)+1 + rn.nextInt(6)+1;
-        for (Tile t : tiles[roll]) {
-            for (Corner c : t.getCorners()) {
-                c.getOwner().addResource(t.getResource(), c.getStructure().generateAmount);
+        for (Tile t : tilesNumRef[roll]) {
+            //Top row of corners
+            for (int i = 0; i < 3; i++) {
+                Corner c = corners[t.getRow()][t.getColumn()*2 + i];
+                if (c.getOwner() != null)
+                    c.getOwner().addResource(t.getResource(), c.getStructure().generateAmount);
+            }
+            //Bottom row of corners
+            for (int i = 0; i < 3; i++) {
+                Corner c = corners[t.getRow()+1][(t.getColumn() - t.getRow()%2)*2 + 1 + i];
+                if (c.getOwner() != null) 
+                    c.getOwner().addResource(t.getResource(), c.getStructure().generateAmount);
             }
         }
     }

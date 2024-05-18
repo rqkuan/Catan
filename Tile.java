@@ -5,7 +5,6 @@ import javax.swing.*;
 
 public class Tile extends JPanel {
 
-    private Corner corners[] = new Corner[6];
     private Board.RESOURCE resource;
     public boolean thief = false;
     public static final int WIDTH = 94, HEIGHT = 108;
@@ -33,10 +32,6 @@ public class Tile extends JPanel {
         this.row = row;
         this.column = column;
         this.resource = resource;
-    }
-
-    public Corner[] getCorners() {
-        return corners;
     }
 
     public Board.RESOURCE getResource() {
