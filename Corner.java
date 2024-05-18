@@ -8,7 +8,7 @@ public class Corner extends JButton {
     public enum STRUCTURE {
         NONE(0, "Catan/Icons/TempCornerBuild.png"),
         SETTLEMENT(1, "Catan/Icons/CatanSettlement.png"),
-        CITY(2, "Catan/Icons/CatanSettlement.png");
+        CITY(2, "Catan/Icons/CatanCity.png");
 
         public final int generateAmount;
         public final ImageIcon icon;

@@ -122,6 +122,7 @@ public class Board extends JFrame{
 
         JButton buildRoadButton = new JButton();
         JButton buildSettlementButton = new JButton();
+        JButton buildCityButton = new JButton();
 
         bottombar.add(buildRoadButton);
         buildRoadButton.setBounds(bottombar.getWidth() - 3*(buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
@@ -129,8 +130,10 @@ public class Board extends JFrame{
         buildRoadButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 buildSettlementButton.setEnabled(false);
+                buildCityButton.setEnabled(false);
                 getCurPlayer().buildRoad(Board.this);
                 buildSettlementButton.setEnabled(true);
+                buildCityButton.setEnabled(true);
             }
         });
 
@@ -140,15 +143,25 @@ public class Board extends JFrame{
         buildSettlementButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 buildRoadButton.setEnabled(false);
+                buildCityButton.setEnabled(false);
                 getCurPlayer().buildSettlement(Board.this);
                 buildRoadButton.setEnabled(true);
+                buildCityButton.setEnabled(true);
             }
         });
 
-        JButton buildCityButton = new JButton();
         bottombar.add(buildCityButton);
         buildCityButton.setBounds(bottombar.getWidth() - (buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
         buildCityButton.setText("City");
+        buildCityButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                buildRoadButton.setEnabled(false);
+                buildSettlementButton.setEnabled(false);
+                getCurPlayer().buildCity(Board.this);
+                buildRoadButton.setEnabled(true);
+                buildSettlementButton.setEnabled(true);
+            }
+        });
 
     }
 
@@ -324,8 +337,17 @@ public class Board extends JFrame{
                 if (c == null)
                     continue;
                 c.buildable = false;
-                if (c.getOwner() == null)
-                    c.setVisible(false);
+
+                switch (c.getStructure())  {
+                    case NONE: 
+                        c.setVisible(false);
+                        break;
+                    case SETTLEMENT:
+                        c.setIcon(Catan.changeIconColor(Corner.STRUCTURE.SETTLEMENT.icon, c.getOwner().getColor()));
+                        break;
+                    default:
+                        break;
+                }
             }
         }
     }

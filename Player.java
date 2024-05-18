@@ -21,10 +21,10 @@ public class Player {
     }
 
     public void buildRoad(Board board) {
-        // if (resources[Board.RESOURCE.TIMBER.ordinal()] == 0 || resources[Board.RESOURCE.BRICK.ordinal()] == 0)
-        //     return;
-        // resources[Board.RESOURCE.TIMBER.ordinal()]--;
-        // resources[Board.RESOURCE.BRICK.ordinal()]--;
+        if (resources[Board.RESOURCE.TIMBER.ordinal()] == 0 || resources[Board.RESOURCE.BRICK.ordinal()] == 0)
+            return;
+        resources[Board.RESOURCE.TIMBER.ordinal()]--;
+        resources[Board.RESOURCE.BRICK.ordinal()]--;
         
         Thread buildRoad = new Thread() {
             @Override
@@ -72,8 +72,6 @@ public class Player {
                 //Show buildable corners
                 boolean spaceAvailable = false;
                 for (Corner c : accessibleCorners) {
-                    if (c == null)
-                        continue;
                     if (c.isEnabled() && c.getOwner() == null) {
                         c.buildable = true;
                         c.setVisible(true);
@@ -109,11 +107,9 @@ public class Player {
                 //Show buildable corners
                 boolean spaceAvailable = false;
                 for (Corner c : accessibleCorners) {
-                    if (c == null)
-                        continue;
                     if (c.isEnabled() && c.getOwner() == Player.this && c.getStructure() == Corner.STRUCTURE.SETTLEMENT) {
                         c.buildable = true;
-                        c.setVisible(true);
+                        c.setIcon(Corner.STRUCTURE.NONE.icon);
                         spaceAvailable = true;
                     }   
                 }

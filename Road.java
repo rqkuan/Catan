@@ -37,7 +37,7 @@ public class Road extends JPanel {
         add(button);
         button.setOpaque(false);
         button.setVisible(false);
-        button.setIcon(Corner.offerBuild);
+        button.setIcon(Corner.STRUCTURE.NONE.icon);
         setComponentZOrder(button, 0);
 
         final Road road = this;
