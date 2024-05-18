@@ -3,7 +3,6 @@ package Catan;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
-import java.util.concurrent.CountDownLatch;
 
 import javax.swing.*;
 
@@ -37,11 +36,13 @@ public class Board extends JFrame{
 
     public Corner recentBuild;
     public ArrayList<Player> players = new ArrayList<Player>();
-    public static final Player NOBODY = new Player(new Color(0, 0, 0, 0));
-    private LinkedList<Tile> tiles[] = new LinkedList[13];
-    public Corner corners[][] = new Corner[6][12]; //Organize later
-    private Road roads[][] = new Road[11][11]; //Organize later
-    private int resourceLimit, resources[], devCards[], curPlayerIndex = 0;
+    // public static final Player NOBODY = new Player(new Color(0, 0, 0, 0));
+    private LinkedList<Tile> tilesNumRef[] = new LinkedList[13];
+    public Tile tiles[][] = new Tile[5][5]; 
+    public Corner corners[][] = new Corner[6][12]; 
+    private Road roads[][] = new Road[11][11]; 
+    private int resourceLimit, resources[], devCards[];
+    public int curPlayerIndex = 0;
     public static Random rn = new Random();
     private static final int mapXOffset = 88, mapYOffset = 15;
 
@@ -86,7 +87,7 @@ public class Board extends JFrame{
         map.setLayout(null);
 
         for (int t = 2; t <= 12; t++)
-            tiles[t] = new LinkedList<Tile>();
+            tilesNumRef[t] = new LinkedList<Tile>();
 
         makeTileRow(0, 1, 3);
         makeTileRow(1, 1, 4);
@@ -169,7 +170,8 @@ public class Board extends JFrame{
         for (int column = first_column; column <= last_column; column++) {
             Tile tempTile = new Tile(row, column, RESOURCE.values()[rn.nextInt(RESOURCE.values().length)]);
             int num = rn.nextInt(11) + 2;
-            tiles[num].add(tempTile); 
+            tilesNumRef[num].add(tempTile); 
+            tiles[row][column] = tempTile;
             tempTile.button.setText(""+num);
 
             //Setting up in GUI
@@ -371,6 +373,10 @@ public class Board extends JFrame{
         return corners[row][column];
     }
 
+    public Tile getTile(int row, int column) {
+        return tiles[row][column];
+    }
+
     public void rollDice() {
         int roll = rn.nextInt(6)+1 + rn.nextInt(6)+1;
         for (Tile t : tiles[roll]) {
@@ -382,13 +388,11 @@ public class Board extends JFrame{
 
     public void nextPlayer() {
         curPlayerIndex++;
-        curPlayerIndex %= players.size()*2;
+        curPlayerIndex %= players.size();
     }
 
     public Player getCurPlayer() {
-        if (curPlayerIndex < players.size())
-            return players.get(curPlayerIndex);
-        return players.get(players.size()*2 - curPlayerIndex - 1);
+        return players.get(curPlayerIndex);
     }
 
 }

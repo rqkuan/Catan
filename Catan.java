@@ -45,10 +45,51 @@ public class Catan {
         b.players.add(new Player(new Color(0, 255, 0)));
         b.players.add(new Player(new Color(0, 0, 255)));
         
-        for (int p = 0; p < b.players.size()*2; p++) {
+        for (; b.curPlayerIndex < b.players.size(); b.curPlayerIndex++) 
             b.offerStartingBuild();
-            b.nextPlayer();
+        for (b.curPlayerIndex--; b.curPlayerIndex >= 0; b.curPlayerIndex--) {
+            b.offerStartingBuild();
+            int row = b.recentBuild.getRow();
+            int column = b.recentBuild.getColumn();
+
+            //The second starting building gives the player some initial resources too
+            if (column % 2 == 0) {
+                //Below the tile
+                try {
+                    Tile t = b.getTile(row-1, column/2 - row%2);
+                    if (t != null) 
+                        b.getCurPlayer().addResource(t.getResource(), 1);
+                } catch (IndexOutOfBoundsException excpt) {}
+                try {
+                    Tile t = b.getTile(row, column/2);
+                    if (t != null) 
+                        b.getCurPlayer().addResource(t.getResource(), 1);
+                } catch (IndexOutOfBoundsException excpt) {}
+                try {
+                    Tile t = b.getTile(row, column/2 - 1);
+                    if (t != null)
+                        b.getCurPlayer().addResource(t.getResource(), 1);
+                } catch (IndexOutOfBoundsException excpt) {}
+            } else {
+                //Above the tile
+                try {
+                    Tile t = b.getTile(row, column/2);
+                    if (t != null) 
+                        b.getCurPlayer().addResource(t.getResource(), 1);
+                } catch (IndexOutOfBoundsException excpt) {}
+                try {
+                    Tile t = b.getTile(row-1, column/2 - row%2);
+                    if (t != null) 
+                        b.getCurPlayer().addResource(t.getResource(), 1);
+                } catch (IndexOutOfBoundsException excpt) {}
+                try {
+                    Tile t = b.getTile(row-1, column/2 + 1 - row%2);
+                    if (t != null) 
+                        b.getCurPlayer().addResource(t.getResource(), 1);
+                } catch (IndexOutOfBoundsException excpt) {}
+            }
         }
+        b.curPlayerIndex = 0;
     }
 
 }
