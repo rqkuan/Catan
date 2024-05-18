@@ -6,13 +6,15 @@ import javax.swing.*;
 public class Corner extends JButton {
 
     public enum STRUCTURE {
-        NONE(0),
-        SETTLEMENT(1),
-        CITY(2);
+        NONE(0, "Catan/Icons/TempCornerBuild.png"),
+        SETTLEMENT(1, "Catan/Icons/CatanSettlement.png"),
+        CITY(2, "Catan/Icons/CatanSettlement.png");
 
         public final int generateAmount;
-        private STRUCTURE(int generateAmount) {
+        public final ImageIcon icon;
+        private STRUCTURE(int generateAmount, String image_path) {
             this.generateAmount = generateAmount;
+            icon = Catan.getResizedIcon(RADIUS*2, RADIUS*2, image_path);
         }
     }
 
@@ -22,13 +24,11 @@ public class Corner extends JButton {
     private int row, column;
     public static final int RADIUS = 12;
     private Board board;
-    public static ImageIcon offerBuild = Catan.getResizedIcon(RADIUS*2, RADIUS*2, "Catan/Icons/TempCornerBuild.png");
-    private static ImageIcon settlementIcon = Catan.getResizedIcon(RADIUS*2, RADIUS*2, "Catan/Icons/CatanSettlement.png");
     
 
     public Corner(Board board, int row, int column) {
         setEnabled(true);
-        setIcon(offerBuild);//testing icon
+        setIcon(structure.icon);
         setVisible(false);
         setContentAreaFilled(false);
         setBorderPainted(false);
@@ -46,9 +46,9 @@ public class Corner extends JButton {
 
                 owner = board.getCurPlayer();
                 owner.addCorner(corner);
-                setIcon(Catan.changeIconColor(settlementIcon, owner.getColor()));
                 buildable = false;
                 structure = STRUCTURE.values()[structure.ordinal() + 1];
+                setIcon(Catan.changeIconColor(structure.icon, owner.getColor()));
                 board.recentBuild = corner;
 
                 //Adjacent corners can no longer be built on

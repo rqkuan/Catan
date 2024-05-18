@@ -117,52 +117,33 @@ public class Board extends JFrame{
 
 
         //Buttons for building
-        final Board board = this;
-
         int buildButtonWidth = 100;
         int buildButtonHeight = 60;
 
         JButton buildRoadButton = new JButton();
+        JButton buildSettlementButton = new JButton();
+
         bottombar.add(buildRoadButton);
         buildRoadButton.setBounds(bottombar.getWidth() - 3*(buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
         buildRoadButton.setText("Road");
         buildRoadButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                Thread buildRoad = new Thread() {
-                    @Override
-                    public void run() {
-                        //Show buildable roads
-                        for (Corner c : getCurPlayer().getAccessibleCorners()) 
-                            if (c.getOwner() == null || c.getOwner() == getCurPlayer())
-                                offerBuildRoads(c);
-                        
-                        try {
-                            Catan.semaphore.acquire();
-                        } catch (InterruptedException excpt) {}
-        
-                        //Reseting roads;
-                        for (Road[] rs : Board.this.roads) {
-                            for (Road r : rs) {
-                                if (r != null) {
-                                    r.button.setVisible(false);
-                                    if (r.buildable) {
-                                        r.setVisible(false);
-                                        r.buildable = false;
-                                    }
-                                }
-                            }
-                        }
-                    }
-                        
-                };
-                buildRoad.start();
+                buildSettlementButton.setEnabled(false);
+                getCurPlayer().buildRoad(Board.this);
+                buildSettlementButton.setEnabled(true);
             }
         });
 
-        JButton buildSettlementButton = new JButton();
         bottombar.add(buildSettlementButton);
         buildSettlementButton.setBounds(bottombar.getWidth() - 2*(buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
         buildSettlementButton.setText("Settlement");
+        buildSettlementButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                buildRoadButton.setEnabled(false);
+                getCurPlayer().buildSettlement(Board.this);
+                buildRoadButton.setEnabled(true);
+            }
+        });
 
         JButton buildCityButton = new JButton();
         bottombar.add(buildCityButton);
@@ -265,7 +246,7 @@ public class Board extends JFrame{
             for (Corner c : cs) {
                 if (c == null)
                     continue;
-                if (c.isEnabled()) {
+                if (c.isEnabled() && c.getOwner() == null) {
                     c.buildable = true;
                     c.setVisible(true);
                 }
@@ -276,15 +257,7 @@ public class Board extends JFrame{
         Catan.semaphore.acquire();
 
         //Hide corner buttons
-        for (Corner[] cs : corners) {
-            for (Corner c : cs) {
-                if (c == null)
-                    continue;
-                c.buildable = false;
-                if (c.getOwner() == null)
-                    c.setVisible(false);
-            }
-        }
+        hideCorners();
 
         //Build the road here too
         offerBuildRoads(recentBuild);
@@ -292,19 +265,8 @@ public class Board extends JFrame{
         //Wait for user to press button
         Catan.semaphore.acquire();
 
-        //Reseting roads;
-        for (Road[] rs : roads) {
-            for (Road r : rs) {
-                if (r == null) 
-                    continue;
-                r.button.setVisible(false);
-
-                if (!r.buildable) 
-                    continue;
-                r.setVisible(false);
-                r.buildable = false;
-            }
-        }
+        //Hide road buttons;
+        hideRoads();
     }
 
     public void offerBuildRoads(Corner c) {
@@ -354,6 +316,33 @@ public class Board extends JFrame{
                 r3.buildable = true;
             }
         } catch (IndexOutOfBoundsException excpt) {}
+    }
+
+    public void hideCorners() {
+        for (Corner[] cs : corners) {
+            for (Corner c : cs) {
+                if (c == null)
+                    continue;
+                c.buildable = false;
+                if (c.getOwner() == null)
+                    c.setVisible(false);
+            }
+        }
+    }
+
+    public void hideRoads() {
+        for (Road[] rs : roads) {
+            for (Road r : rs) {
+                if (r == null) 
+                    continue;
+                r.button.setVisible(false);
+
+                if (!r.buildable) 
+                    continue;
+                r.setVisible(false);
+                r.buildable = false;
+            }
+        }
     }
 
     public Corner getCorner(int row, int column) {

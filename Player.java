@@ -21,20 +21,115 @@ public class Player {
     }
 
     public void buildRoad(Board board) {
-        //Find the roads locations that the player can build at
+        // if (resources[Board.RESOURCE.TIMBER.ordinal()] == 0 || resources[Board.RESOURCE.BRICK.ordinal()] == 0)
+        //     return;
+        // resources[Board.RESOURCE.TIMBER.ordinal()]--;
+        // resources[Board.RESOURCE.BRICK.ordinal()]--;
+        
+        Thread buildRoad = new Thread() {
+            @Override
+            public void run() {
+                //Show buildable roads
+                boolean spaceAvailable = false;
+                for (Corner c : accessibleCorners) {
+                    if (c.getOwner() == null || c.getOwner() == Player.this) {
+                        board.offerBuildRoads(c);
+                        spaceAvailable = true;
+                    }
+                }
+                if (!spaceAvailable)
+                    return;
+                
+                try {
+                    Catan.semaphore.acquire();
+                } catch (InterruptedException excpt) {}
 
+                //Hide (and disable) road buttons;
+                board.hideRoads();
+            }
+                
+        };
+        buildRoad.start();
     }
 
     public void buildSettlement(Board board) {
-        //Find the corners that the player can build a settlement at
+        if (resources[Board.RESOURCE.TIMBER.ordinal()] == 0)
+            return;
+        if (resources[Board.RESOURCE.BRICK.ordinal()] == 0)
+            return;
+        if (resources[Board.RESOURCE.SHEEP.ordinal()] == 0)
+            return;
+        if (resources[Board.RESOURCE.WHEAT.ordinal()] == 0)
+            return;
+        resources[Board.RESOURCE.TIMBER.ordinal()]--;
+        resources[Board.RESOURCE.BRICK.ordinal()]--;
+        resources[Board.RESOURCE.SHEEP.ordinal()]--;
+        resources[Board.RESOURCE.WHEAT.ordinal()]--;
 
+        Thread buildSettlement = new Thread() {
+            @Override
+            public void run() {
+                //Show buildable corners
+                boolean spaceAvailable = false;
+                for (Corner c : accessibleCorners) {
+                    if (c == null)
+                        continue;
+                    if (c.isEnabled() && c.getOwner() == null) {
+                        c.buildable = true;
+                        c.setVisible(true);
+                        spaceAvailable = true;
+                    }   
+                }
+                if (!spaceAvailable) 
+                    return;
 
+                try {
+                    Catan.semaphore.acquire();
+                } catch (InterruptedException excpt) {}
+
+                //Hide (and disable) corner buttons;
+                board.hideCorners();
+            }
+                
+        };
+        buildSettlement.start();
     }
 
     public void buildCity(Board board) {
-        //Find the corners that the player can build a city at
+        if (resources[Board.RESOURCE.ORE.ordinal()] < 3)
+            return;
+        if (resources[Board.RESOURCE.WHEAT.ordinal()] < 2)
+            return;
+        resources[Board.RESOURCE.ORE.ordinal()] -= 3;
+        resources[Board.RESOURCE.WHEAT.ordinal()] -= 2;
 
+        Thread buildCity = new Thread() {
+            @Override
+            public void run() {
+                //Show buildable corners
+                boolean spaceAvailable = false;
+                for (Corner c : accessibleCorners) {
+                    if (c == null)
+                        continue;
+                    if (c.isEnabled() && c.getOwner() == Player.this && c.getStructure() == Corner.STRUCTURE.SETTLEMENT) {
+                        c.buildable = true;
+                        c.setVisible(true);
+                        spaceAvailable = true;
+                    }   
+                }
+                if (!spaceAvailable) 
+                    return;
 
+                try {
+                    Catan.semaphore.acquire();
+                } catch (InterruptedException excpt) {}
+
+                //Hide (and disable) corner buttons;
+                board.hideCorners();
+            }
+                
+        };
+        buildCity.start();
     }
 
     public void trade(Player player, int[] give, int [] receive) {
