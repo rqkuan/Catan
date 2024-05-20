@@ -9,12 +9,12 @@ import javax.swing.*;
 public class Board extends JFrame{
 
     public static enum RESOURCE {
-        WHEAT("Catan/Icons/CatanWheat.png"),
-        SHEEP("Catan/Icons/CatanSheep.png"),
-        TIMBER("Catan/Icons/CatanTimber.png"),
-        BRICK("Catan/Icons/CatanBrick.png"),
-        ORE("Catan/Icons/CatanOre.png"),
-        NONE("Catan/Icons/CatanWheat.png");
+        WHEAT("Catan/Icons/CatanWheatTile.png"),
+        SHEEP("Catan/Icons/CatanSheepTile.png"),
+        TIMBER("Catan/Icons/CatanTimberTile.png"),
+        BRICK("Catan/Icons/CatanBrickTile.png"),
+        ORE("Catan/Icons/CatanOreTile.png"),
+        NONE("Catan/Icons/CatanWheatTile.png");
 
         public ImageIcon icon;
         private RESOURCE (String image_path) {
@@ -48,6 +48,8 @@ public class Board extends JFrame{
 
     public JPanel sidebar, bottombar, map;
     public JButton buildRoadButton, buildSettlementButton, buildCityButton, rollDiceButton, endTurnButton;
+    public JLabel curPlayerLabel, wheatLabel, sheepLabel, timberLabel, brickLabel, oreLabel, 
+                    rollLabel, wheatAmount, sheepAmount, timberAmount, brickAmount, oreAmount;
 
     public Board() {
         //Create gui upon construction of board object
@@ -196,7 +198,68 @@ public class Board extends JFrame{
                 endTurnButton.setEnabled(false);
             }
         });
+
+
+        //Resource/player display
+        curPlayerLabel = new JLabel();
+        bottombar.add(curPlayerLabel);
+        curPlayerLabel.setBounds(2, 2, 70, 16);
+        curPlayerLabel.setText("Player " + (curPlayerIndex+1));
+        
+        wheatLabel = new JLabel();
+        bottombar.add(wheatLabel);
+        wheatLabel.setBounds(20, 25, 50, bottombar.getHeight()-50);
+        wheatLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanWheat.png"));
+        wheatAmount = new JLabel();
+        bottombar.add(wheatAmount);
+        wheatAmount.setBounds(37, wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
+        wheatAmount.setText("00");
+        
+        
+        sheepLabel = new JLabel();
+        bottombar.add(sheepLabel);
+        sheepLabel.setBounds(wheatLabel.getX() + 1*(60), wheatLabel.getY(), wheatLabel.getWidth(), wheatLabel.getHeight());
+        sheepLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanSheep.png"));
+        sheepAmount = new JLabel();
+        bottombar.add(sheepAmount);
+        sheepAmount.setBounds(37 + 1*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
+        sheepAmount.setText("00");
+        
+        timberLabel = new JLabel();
+        bottombar.add(timberLabel);
+        timberLabel.setBounds(wheatLabel.getX() + 2*(60), wheatLabel.getY(), wheatLabel.getWidth(), wheatLabel.getHeight());
+        timberLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanTimber.png"));
+        timberAmount = new JLabel();
+        bottombar.add(timberAmount);
+        timberAmount.setBounds(37 + 2*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
+        timberAmount.setText("00");
+        
+        brickLabel = new JLabel();
+        bottombar.add(brickLabel);
+        brickLabel.setBounds(wheatLabel.getX() + 3*(60), wheatLabel.getY(), wheatLabel.getWidth(), wheatLabel.getHeight());
+        brickLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanBrick.png"));
+        brickAmount = new JLabel();
+        bottombar.add(brickAmount);
+        brickAmount.setBounds(37 + 3*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
+        brickAmount.setText("00");
+        
+        oreLabel = new JLabel();
+        bottombar.add(oreLabel);
+        oreLabel.setBounds(wheatLabel.getX() + 4*(60), wheatLabel.getY(), wheatLabel.getWidth(), wheatLabel.getHeight());
+        oreLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanOre.png"));
+        oreAmount = new JLabel();
+        bottombar.add(oreAmount);
+        oreAmount.setBounds(37 + 4*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
+        oreAmount.setText("00");
+
+        //Roll Label
+        rollLabel = new JLabel();
+        sidebar.add(rollLabel);
+        rollLabel.setBounds(rollDiceButton.getX()+rollDiceButton.getWidth()/2 - 7, rollDiceButton.getY()+rollDiceButton.getHeight()-5, 30, 30);
+        rollLabel.setText("--");
     }
+
+
 
     public void makeTileRow(int row, int first_column, int last_column) {
         for (int column = first_column; column <= last_column; column++) {
@@ -411,6 +474,7 @@ public class Board extends JFrame{
 
     public void rollDice() {
         int roll = rn.nextInt(6)+1 + rn.nextInt(6)+1;
+        rollLabel.setText(""+roll);
         for (Tile t : tilesNumRef[roll]) {
             //Top row of corners
             for (int i = 0; i < 3; i++) {
@@ -425,11 +489,40 @@ public class Board extends JFrame{
                     c.getOwner().addResource(t.getResource(), c.getStructure().generateAmount);
             }
         }
+        
+        String wheatStr = "";
+        if (getCurPlayer().getResource(RESOURCE.WHEAT) < 10)
+            wheatStr += "0";
+        wheatStr += getCurPlayer().getResource(RESOURCE.WHEAT);
+        wheatAmount.setText(wheatStr);
+
+        updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
+        updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
+        updateResourceAmount(timberAmount, RESOURCE.TIMBER);
+        updateResourceAmount(brickAmount, RESOURCE.BRICK);
+        updateResourceAmount(oreAmount, RESOURCE.ORE);
+    }
+
+    public void updateResourceAmount(JLabel Label, RESOURCE resource) {
+        String str = "";
+        if (getCurPlayer().getResource(resource) < 10)
+            str += "0";
+        str += getCurPlayer().getResource(resource);
+        Label.setText(str);
     }
 
     public void nextPlayer() {
         curPlayerIndex++;
         curPlayerIndex %= players.size();
+        curPlayerLabel.setText("Player " + (curPlayerIndex+1));
+
+        updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
+        updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
+        updateResourceAmount(timberAmount, RESOURCE.TIMBER);
+        updateResourceAmount(brickAmount, RESOURCE.BRICK);
+        updateResourceAmount(oreAmount, RESOURCE.ORE);
+
+        rollLabel.setText("--");
     }
 
     public Player getCurPlayer() {

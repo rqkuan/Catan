@@ -50,9 +50,12 @@ public class Catan {
         b.buildCityButton.setEnabled(false);
         b.rollDiceButton.setEnabled(false);
         b.endTurnButton.setEnabled(false);
-        for (; b.curPlayerIndex < b.players.size(); b.curPlayerIndex++) 
+        for (; b.curPlayerIndex < b.players.size(); b.curPlayerIndex++) {
+            b.curPlayerLabel.setText("Player " + (b.curPlayerIndex+1));
             b.offerStartingBuild();
+        }
         for (b.curPlayerIndex--; b.curPlayerIndex >= 0; b.curPlayerIndex--) {
+            b.curPlayerLabel.setText("Player " + (b.curPlayerIndex+1));
             b.offerStartingBuild();
             int row = b.recentBuild.getRow();
             int column = b.recentBuild.getColumn();

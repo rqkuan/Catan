@@ -25,6 +25,8 @@ public class Player {
             return;
         resources[Board.RESOURCE.TIMBER.ordinal()]--;
         resources[Board.RESOURCE.BRICK.ordinal()]--;
+        board.updateResourceAmount(board.timberAmount, Board.RESOURCE.TIMBER);
+        board.updateResourceAmount(board.brickAmount, Board.RESOURCE.BRICK);
         
         Thread buildRoad = new Thread() {
             @Override
@@ -65,6 +67,10 @@ public class Player {
         resources[Board.RESOURCE.BRICK.ordinal()]--;
         resources[Board.RESOURCE.SHEEP.ordinal()]--;
         resources[Board.RESOURCE.WHEAT.ordinal()]--;
+        board.updateResourceAmount(board.timberAmount, Board.RESOURCE.TIMBER);
+        board.updateResourceAmount(board.brickAmount, Board.RESOURCE.BRICK);
+        board.updateResourceAmount(board.sheepAmount, Board.RESOURCE.SHEEP);
+        board.updateResourceAmount(board.wheatAmount, Board.RESOURCE.WHEAT);
 
         Thread buildSettlement = new Thread() {
             @Override
@@ -100,6 +106,8 @@ public class Player {
             return;
         resources[Board.RESOURCE.ORE.ordinal()] -= 3;
         resources[Board.RESOURCE.WHEAT.ordinal()] -= 2;
+        board.updateResourceAmount(board.oreAmount, Board.RESOURCE.ORE);
+        board.updateResourceAmount(board.wheatAmount, Board.RESOURCE.WHEAT);
 
         Thread buildCity = new Thread() {
             @Override
@@ -135,6 +143,10 @@ public class Player {
 
     public void addResource(Board.RESOURCE resource, int amount) {
         resources[resource.ordinal()] += amount;
+    }
+
+    public int getResource(Board.RESOURCE resource) {
+        return resources[resource.ordinal()];
     }
 
     public void addCorner(Corner c) {
