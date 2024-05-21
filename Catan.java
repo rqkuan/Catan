@@ -40,7 +40,9 @@ public class Catan {
     }
 
     public static void main(String[] args) throws InterruptedException {
-        Board b = new Board();
+        int devCards[] = {14, 5, 2, 2, 2};
+
+        Board b = new Board(7, 18, devCards);
         b.players.add(new Player(new Color(255, 0, 0)));
         b.players.add(new Player(new Color(0, 255, 0)));
         b.players.add(new Player(new Color(0, 0, 255)));
@@ -52,10 +54,12 @@ public class Catan {
         b.endTurnButton.setEnabled(false);
         for (; b.curPlayerIndex < b.players.size(); b.curPlayerIndex++) {
             b.curPlayerLabel.setText("Player " + (b.curPlayerIndex+1));
+            b.curPlayerLabel.setForeground(b.getCurPlayer().getColor());
             b.offerStartingBuild();
         }
         for (b.curPlayerIndex--; b.curPlayerIndex >= 0; b.curPlayerIndex--) {
             b.curPlayerLabel.setText("Player " + (b.curPlayerIndex+1));
+            b.curPlayerLabel.setForeground(b.getCurPlayer().getColor());
             b.offerStartingBuild();
             int row = b.recentBuild.getRow();
             int column = b.recentBuild.getColumn();

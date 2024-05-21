@@ -7,7 +7,7 @@ public class Player {
 
     private LinkedList<Corner> accessibleCorners = new LinkedList<Corner>();
     private int[] devCards = new int[Board.DEVELOPMENT.values().length];
-    private int[] resources = new int[Board.RESOURCE.values().length];
+    protected int[] resources = new int[Board.RESOURCE.values().length-1];
     private int settlements = 4, cities = 4;
     private boolean developed = false;
     private Color color;
@@ -136,9 +136,13 @@ public class Player {
         buildCity.start();
     }
 
-    public void trade(Player player, int[] give, int [] receive) {
-        //trading offer
-
+    public void trade(Player player, int[] give, int[] receive) {
+        for (int i = 0; i < Board.RESOURCE.values().length-1; i++) {
+            this.resources[i] -= give[i];
+            player.resources[i] += give[i];
+            this.resources[i] += receive[i];
+            player.resources[i] -= receive[i];
+        }
     }
 
     public void addResource(Board.RESOURCE resource, int amount) {

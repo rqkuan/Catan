@@ -34,24 +34,32 @@ public class Board extends JFrame{
         MONOPOLY;
     }
 
+    //Board attributes
     public Corner recentBuild;
     public ArrayList<Player> players = new ArrayList<Player>();
-    // public static final Player NOBODY = new Player(new Color(0, 0, 0, 0));
+    public Player bank = new Player(new Color(0, 0, 0));
     private LinkedList<Tile> tilesNumRef[] = new LinkedList[13];
     public Tile tiles[][] = new Tile[5][5]; 
     public Corner corners[][] = new Corner[6][12]; 
     private Road roads[][] = new Road[11][11]; 
-    private int resourceLimit, resources[], devCards[];
+    private int resourceLimit, totalResources, devCards[];
     public int curPlayerIndex = 0;
     public static Random rn = new Random();
-    private static final int mapXOffset = 88, mapYOffset = 15;
 
+    //GUI objects/attributes
+    private static final int mapXOffset = 88, mapYOffset = 15;
     public JPanel sidebar, bottombar, map;
-    public JButton buildRoadButton, buildSettlementButton, buildCityButton, rollDiceButton, endTurnButton;
+    public JButton buildRoadButton, buildSettlementButton, buildCityButton, rollDiceButton, endTurnButton, tradeButton;
     public JLabel curPlayerLabel, wheatLabel, sheepLabel, timberLabel, brickLabel, oreLabel, 
                     rollLabel, wheatAmount, sheepAmount, timberAmount, brickAmount, oreAmount;
 
-    public Board() {
+    public Board(int resourceLimit, int totalResources, int[] devCards) {
+        this.resourceLimit = resourceLimit;
+        this.totalResources = totalResources;
+        for (int i = 0; i < RESOURCE.values().length-1; i++)
+            bank.addResource(RESOURCE.values()[i], totalResources);
+        this.devCards = devCards;
+
         //Create gui upon construction of board object
 
         //Setting the Frame
@@ -124,13 +132,13 @@ public class Board extends JFrame{
         int buildButtonWidth = 100;
         int buildButtonHeight = 60;
 
-        buildRoadButton = new JButton();
-        buildSettlementButton = new JButton();
-        buildCityButton = new JButton();
+        buildRoadButton = new JButton("Road");
+        buildSettlementButton = new JButton("Settlement");
+        buildCityButton = new JButton("City");
 
+        //Road
         bottombar.add(buildRoadButton);
         buildRoadButton.setBounds(bottombar.getWidth() - 3*(buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
-        buildRoadButton.setText("Road");
         buildRoadButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 buildSettlementButton.setEnabled(false);
@@ -141,9 +149,9 @@ public class Board extends JFrame{
             }
         });
 
+        //Settlement
         bottombar.add(buildSettlementButton);
         buildSettlementButton.setBounds(bottombar.getWidth() - 2*(buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
-        buildSettlementButton.setText("Settlement");
         buildSettlementButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 buildRoadButton.setEnabled(false);
@@ -154,9 +162,9 @@ public class Board extends JFrame{
             }
         });
 
+        //City
         bottombar.add(buildCityButton);
         buildCityButton.setBounds(bottombar.getWidth() - (buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
-        buildCityButton.setText("City");
         buildCityButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 buildRoadButton.setEnabled(false);
@@ -168,10 +176,9 @@ public class Board extends JFrame{
         });
 
         //Dice Roll Button
-        rollDiceButton = new JButton();
+        rollDiceButton = new JButton("Roll Dice");
         sidebar.add(rollDiceButton);
         rollDiceButton.setBounds(5, 450 + (bottombar.getHeight() - buildButtonHeight)/2, (sidebar.getWidth() - 15)/2, buildButtonHeight);
-        rollDiceButton.setText("Roll Dice");
         rollDiceButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 rollDice();
@@ -182,12 +189,14 @@ public class Board extends JFrame{
                 endTurnButton.setEnabled(true);
             }
         });
+        rollLabel = new JLabel("--");
+        sidebar.add(rollLabel);
+        rollLabel.setBounds(rollDiceButton.getX()+rollDiceButton.getWidth()/2 - 7, rollDiceButton.getY()+rollDiceButton.getHeight()-5, 30, 30);
 
         //End Turn Button
-        endTurnButton = new JButton();
+        endTurnButton = new JButton("End Turn");
         sidebar.add(endTurnButton);
         endTurnButton.setBounds(5 + (sidebar.getWidth() - 15)/2 + 5, 450 + (bottombar.getHeight() - buildButtonHeight)/2, (sidebar.getWidth() - 15)/2, buildButtonHeight);
-        endTurnButton.setText("End Turn");
         endTurnButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 nextPlayer();
@@ -204,62 +213,63 @@ public class Board extends JFrame{
         curPlayerLabel = new JLabel();
         bottombar.add(curPlayerLabel);
         curPlayerLabel.setBounds(2, 2, 70, 16);
-        curPlayerLabel.setText("Player " + (curPlayerIndex+1));
         
-        wheatLabel = new JLabel();
+        //Wheat display
+        wheatLabel = new JLabel("00");
         bottombar.add(wheatLabel);
         wheatLabel.setBounds(20, 25, 50, bottombar.getHeight()-50);
         wheatLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanWheat.png"));
         wheatAmount = new JLabel();
         bottombar.add(wheatAmount);
         wheatAmount.setBounds(37, wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
-        wheatAmount.setText("00");
         
-        
-        sheepLabel = new JLabel();
+        //Sheep display
+        sheepLabel = new JLabel("00");
         bottombar.add(sheepLabel);
         sheepLabel.setBounds(wheatLabel.getX() + 1*(60), wheatLabel.getY(), wheatLabel.getWidth(), wheatLabel.getHeight());
         sheepLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanSheep.png"));
         sheepAmount = new JLabel();
         bottombar.add(sheepAmount);
         sheepAmount.setBounds(37 + 1*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
-        sheepAmount.setText("00");
         
-        timberLabel = new JLabel();
+        //Timber display
+        timberLabel = new JLabel("00");
         bottombar.add(timberLabel);
         timberLabel.setBounds(wheatLabel.getX() + 2*(60), wheatLabel.getY(), wheatLabel.getWidth(), wheatLabel.getHeight());
         timberLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanTimber.png"));
         timberAmount = new JLabel();
         bottombar.add(timberAmount);
         timberAmount.setBounds(37 + 2*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
-        timberAmount.setText("00");
         
-        brickLabel = new JLabel();
+        //Brick display
+        brickLabel = new JLabel("00");
         bottombar.add(brickLabel);
         brickLabel.setBounds(wheatLabel.getX() + 3*(60), wheatLabel.getY(), wheatLabel.getWidth(), wheatLabel.getHeight());
         brickLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanBrick.png"));
         brickAmount = new JLabel();
         bottombar.add(brickAmount);
         brickAmount.setBounds(37 + 3*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
-        brickAmount.setText("00");
         
-        oreLabel = new JLabel();
+        //Ore display
+        oreLabel = new JLabel("00");
         bottombar.add(oreLabel);
         oreLabel.setBounds(wheatLabel.getX() + 4*(60), wheatLabel.getY(), wheatLabel.getWidth(), wheatLabel.getHeight());
         oreLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanOre.png"));
         oreAmount = new JLabel();
         bottombar.add(oreAmount);
         oreAmount.setBounds(37 + 4*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
-        oreAmount.setText("00");
 
-        //Roll Label
-        rollLabel = new JLabel();
-        sidebar.add(rollLabel);
-        rollLabel.setBounds(rollDiceButton.getX()+rollDiceButton.getWidth()/2 - 7, rollDiceButton.getY()+rollDiceButton.getHeight()-5, 30, 30);
-        rollLabel.setText("--");
+
+        //Trading
+        tradeButton = new JButton("Trade");
+        sidebar.add(tradeButton);
+        tradeButton.setBounds(5, 5, 50, 50);
+        tradeButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                offerTrades();
+            }
+        });
     }
-
-
 
     public void makeTileRow(int row, int first_column, int last_column) {
         for (int column = first_column; column <= last_column; column++) {
@@ -489,12 +499,6 @@ public class Board extends JFrame{
                     c.getOwner().addResource(t.getResource(), c.getStructure().generateAmount);
             }
         }
-        
-        String wheatStr = "";
-        if (getCurPlayer().getResource(RESOURCE.WHEAT) < 10)
-            wheatStr += "0";
-        wheatStr += getCurPlayer().getResource(RESOURCE.WHEAT);
-        wheatAmount.setText(wheatStr);
 
         updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
         updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
@@ -511,10 +515,125 @@ public class Board extends JFrame{
         Label.setText(str);
     }
 
+    public void offerTrades() {
+        JDialog tradeMenu = new JDialog(Board.this, "Trading");
+        tradeMenu.setSize(300, 280);
+        tradeMenu.setVisible(true);
+        tradeMenu.setLayout(null);
+        tradeMenu.setResizable(false);
+
+        JLabel tradeGiveLabel = new JLabel("Give: ");
+        tradeMenu.add(tradeGiveLabel);
+        tradeGiveLabel.setBounds(80, 10, 50, 20);
+        JLabel tradeReceiveLabel = new JLabel("Receive: ");
+        tradeMenu.add(tradeReceiveLabel);
+        tradeReceiveLabel.setBounds(180, 10, 70, 20);
+
+        //Wheat
+        JLabel wheatTradeLabel = new JLabel("Wheat: ");
+        tradeMenu.add(wheatTradeLabel);
+        wheatTradeLabel.setBounds(10, 40, 70, 20);
+        JSpinner wheatGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.WHEAT), 1));
+        tradeMenu.add(wheatGive);
+        wheatGive.setBounds(80, 40, 50, 20);
+        JSpinner wheatReceive = new JSpinner(new SpinnerNumberModel(0, 0, totalResources, 1));
+        tradeMenu.add(wheatReceive);
+        wheatReceive.setBounds(180, 40, 50, 20);
+
+        //Sheep
+        JLabel sheepTradeLabel = new JLabel("Sheep: ");
+        tradeMenu.add(sheepTradeLabel);
+        sheepTradeLabel.setBounds(10, 40 + 1*25, 70, 20);
+        JSpinner sheepGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.SHEEP), 1));
+        tradeMenu.add(sheepGive);
+        sheepGive.setBounds(80, 40 + 1*25, 50, 20);
+        JSpinner sheepReceive = new JSpinner(new SpinnerNumberModel(0, 0, totalResources, 1));
+        tradeMenu.add(sheepReceive);
+        sheepReceive.setBounds(180, 40 + 1*25, 50, 20);
+
+        //Timber
+        JLabel timberTradeLabel = new JLabel("Timber: ");
+        tradeMenu.add(timberTradeLabel);
+        timberTradeLabel.setBounds(10, 40 + 2*25, 70, 20);
+        JSpinner timberGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.TIMBER), 1));
+        tradeMenu.add(timberGive);
+        timberGive.setBounds(80, 40 + 2*25, 50, 20);
+        JSpinner timberReceive = new JSpinner(new SpinnerNumberModel(0, 0, totalResources, 1));
+        tradeMenu.add(timberReceive);
+        timberReceive.setBounds(180, 40 + 2*25, 50, 20);
+
+        //Brick
+        JLabel brickTradeLabel = new JLabel("Brick: ");
+        tradeMenu.add(brickTradeLabel);
+        brickTradeLabel.setBounds(10, 40 + 3*25, 70, 20);
+        JSpinner brickGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.BRICK), 1));
+        tradeMenu.add(brickGive);
+        brickGive.setBounds(80, 40 + 3*25, 50, 20);
+        JSpinner brickReceive = new JSpinner(new SpinnerNumberModel(0, 0, totalResources, 1));
+        tradeMenu.add(brickReceive);
+        brickReceive.setBounds(180, 40 + 3*25, 50, 20);
+
+        //Ore
+        JLabel oreTradeLabel = new JLabel("Ore: ");
+        tradeMenu.add(oreTradeLabel);
+        oreTradeLabel.setBounds(10, 40 + 4*25, 70, 20);
+        JSpinner oreGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.ORE), 1));
+        tradeMenu.add(oreGive);
+        oreGive.setBounds(80, 40 + 4*25, 50, 20);
+        JSpinner oreReceive = new JSpinner(new SpinnerNumberModel(0, 0, totalResources, 1));
+        tradeMenu.add(oreReceive);
+        oreReceive.setBounds(180, 40 + 4*25, 50, 20);
+
+
+        //Results
+        JButton bankTradeButton = new JButton("Trade with Bank");
+        tradeMenu.add(bankTradeButton);
+        bankTradeButton.setBounds(70, 180, 170, 20);
+        bankTradeButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int[] receive = new int[RESOURCE.values().length-1];
+                receive[RESOURCE.WHEAT.ordinal()] = (Integer) wheatReceive.getValue();
+                receive[RESOURCE.SHEEP.ordinal()] = (Integer) sheepReceive.getValue();
+                receive[RESOURCE.TIMBER.ordinal()] = (Integer) timberReceive.getValue();
+                receive[RESOURCE.BRICK.ordinal()] = (Integer) brickReceive.getValue();
+                receive[RESOURCE.ORE.ordinal()] = (Integer) oreReceive.getValue();
+
+                int n = 0;
+                for (int i : receive)
+                    n += i;
+                if (n != 1)
+                    return;
+
+                if ((Integer)wheatGive.getValue() == 4)
+                    getCurPlayer().trade(Board.this.bank, new int[] {4, 0, 0, 0, 0}, receive);
+                else if ((Integer)sheepGive.getValue() == 4)
+                    getCurPlayer().trade(Board.this.bank, new int[] {0, 4, 0, 0, 0}, receive);
+                else if ((Integer)timberGive.getValue() == 4)
+                    getCurPlayer().trade(Board.this.bank, new int[] {0, 0, 4, 0, 0}, receive);
+                else if ((Integer)brickGive.getValue() == 4)
+                    getCurPlayer().trade(Board.this.bank, new int[] {0, 0, 0, 4, 0}, receive);
+                else if ((Integer)oreGive.getValue() == 4)
+                    getCurPlayer().trade(Board.this.bank, new int[] {0, 0, 0, 0, 4}, receive);
+                
+                updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
+                updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
+                updateResourceAmount(timberAmount, RESOURCE.TIMBER);
+                updateResourceAmount(brickAmount, RESOURCE.BRICK);
+                updateResourceAmount(oreAmount, RESOURCE.ORE);
+                tradeMenu.dispose();
+            }
+        });
+
+        JButton playerTradeButton = new JButton("Offer trade with players");
+        tradeMenu.add(playerTradeButton);
+        playerTradeButton.setBounds(70, 210, 170, 20);
+    }
+
     public void nextPlayer() {
         curPlayerIndex++;
         curPlayerIndex %= players.size();
         curPlayerLabel.setText("Player " + (curPlayerIndex+1));
+        curPlayerLabel.setForeground(getCurPlayer().getColor());
 
         updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
         updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
