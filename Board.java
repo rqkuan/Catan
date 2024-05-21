@@ -42,7 +42,7 @@ public class Board extends JFrame{
     public Tile tiles[][] = new Tile[5][5]; 
     public Corner corners[][] = new Corner[6][12]; 
     private Road roads[][] = new Road[11][11]; 
-    private int resourceLimit, totalResources, devCards[];
+    private int resourceLimit, totalResources, devCards[], VPRequirement;
     public int curPlayerIndex = 0;
     public static Random rn = new Random();
 
@@ -53,12 +53,13 @@ public class Board extends JFrame{
     public JLabel curPlayerLabel, wheatLabel, sheepLabel, timberLabel, brickLabel, oreLabel, 
                     rollLabel, wheatAmount, sheepAmount, timberAmount, brickAmount, oreAmount;
 
-    public Board(int resourceLimit, int totalResources, int[] devCards) {
+    public Board(int resourceLimit, int totalResources, int[] devCards, int VPRequirement) {
         this.resourceLimit = resourceLimit;
         this.totalResources = totalResources;
         for (int i = 0; i < RESOURCE.values().length-1; i++)
             bank.addResource(RESOURCE.values()[i], totalResources);
         this.devCards = devCards;
+        this.VPRequirement = VPRequirement;
 
         //Create gui upon construction of board object
 
@@ -199,6 +200,10 @@ public class Board extends JFrame{
         endTurnButton.setBounds(5 + (sidebar.getWidth() - 15)/2 + 5, 450 + (bottombar.getHeight() - buildButtonHeight)/2, (sidebar.getWidth() - 15)/2, buildButtonHeight);
         endTurnButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                //Check win
+                if (getCurPlayer().getVictoryPoints() >= VPRequirement)
+                    System.out.println("Player " + (curPlayerIndex+1) + " Wins! (" + getCurPlayer().getVictoryPoints() + " Victory Points)");
+
                 nextPlayer();
                 buildRoadButton.setEnabled(false);
                 buildSettlementButton.setEnabled(false);
@@ -668,7 +673,6 @@ public class Board extends JFrame{
                     });
                     playerTradeSelect.add(tempMenuItem);
                 }
-
                 playerTradeSelect.show(tradeMenu, 0, 0);
             }
         });

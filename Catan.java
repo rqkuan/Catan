@@ -2,7 +2,6 @@ package Catan;
 
 import java.io.*;
 import java.util.concurrent.Semaphore;
-
 import javax.imageio.*;
 import javax.swing.*;
 import java.awt.*;
@@ -42,7 +41,7 @@ public class Catan {
     public static void main(String[] args) throws InterruptedException {
         int devCards[] = {14, 5, 2, 2, 2};
 
-        Board b = new Board(7, 18, devCards);
+        Board b = new Board(7, 18, devCards, 10);
         b.players.add(new Player(new Color(255, 0, 0)));
         b.players.add(new Player(new Color(0, 255, 0)));
         b.players.add(new Player(new Color(0, 0, 255)));

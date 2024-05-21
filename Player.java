@@ -8,7 +8,7 @@ public class Player {
     private LinkedList<Corner> accessibleCorners = new LinkedList<Corner>();
     private int[] devCards = new int[Board.DEVELOPMENT.values().length];
     protected int[] resources = new int[Board.RESOURCE.values().length-1];
-    private int settlements = 4, cities = 4;
+    private int settlements = 4, cities = 4, victoryPoints = -2;
     private boolean developed = false;
     private Color color;
 
@@ -55,6 +55,9 @@ public class Player {
     }
 
     public void buildSettlement(Board board) {
+        if (settlements == 0)
+            return;
+
         if (resources[Board.RESOURCE.TIMBER.ordinal()] == 0)
             return;
         if (resources[Board.RESOURCE.BRICK.ordinal()] == 0)
@@ -93,6 +96,10 @@ public class Player {
 
                 //Hide (and disable) corner buttons;
                 board.hideCorners();
+
+                //Victory points and building count
+                victoryPoints++;
+                settlements--;
             }
                 
         };
@@ -100,6 +107,9 @@ public class Player {
     }
 
     public void buildCity(Board board) {
+        if (cities == 0)
+            return;
+
         if (resources[Board.RESOURCE.ORE.ordinal()] < 3)
             return;
         if (resources[Board.RESOURCE.WHEAT.ordinal()] < 2)
@@ -130,6 +140,11 @@ public class Player {
 
                 //Hide (and disable) corner buttons;
                 board.hideCorners();
+
+                //Victory points and building count
+                victoryPoints++;
+                settlements++;
+                cities--;
             }
                 
         };
@@ -163,5 +178,9 @@ public class Player {
 
     public LinkedList<Corner> getAccessibleCorners() {
         return accessibleCorners;
+    }
+
+    public int getVictoryPoints() {
+        return victoryPoints;
     }
 }
