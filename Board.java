@@ -71,9 +71,7 @@ public class Board extends JFrame{
         setSize(840, 600);
         setVisible(true);
         Dimension dm = Toolkit.getDefaultToolkit().getScreenSize();
-        int x = (int) ((dm.getWidth() - this.getWidth()) / 2);
-        int y = (int) ((dm.getHeight() - this.getHeight()) / 2);
-        this.setLocation(x, y);
+        this.setLocation((int) ((dm.getWidth() - this.getWidth()) / 2), (int) ((dm.getHeight() - this.getHeight()) / 2));
 
         //Sidebar
         sidebar = new JPanel();
@@ -106,6 +104,22 @@ public class Board extends JFrame{
         makeTileRow(2, 0, 4);
         makeTileRow(3, 1, 4);
         makeTileRow(4, 1, 3);
+        while (true) {
+            int row = rn.nextInt(5);
+            int column = rn.nextInt(5);
+            if (tiles[row][column] == null)
+                continue;
+            map.remove(tiles[row][column]);
+
+            Tile tempTile = new Tile(row, column, RESOURCE.NONE);
+            tiles[row][column] = tempTile;
+            //Setting up in GUI
+            map.add(tempTile);
+            int x = (Tile.WIDTH - Tile.WIDTH/20)*column - (int)(0.5 * (row%2) * (Tile.WIDTH - 4));
+            int y = (int)((Tile.HEIGHT*1.5 - Tile.HEIGHT/15)*row/2.0);
+            tempTile.setBounds(mapXOffset+x, mapYOffset+y, Tile.WIDTH, Tile.HEIGHT);
+            break;
+        }
 
         makeRoadRow(0, 2, 7);
         makeRoadRow(1, 1, 4);
@@ -133,46 +147,36 @@ public class Board extends JFrame{
         int buildButtonWidth = 100;
         int buildButtonHeight = 60;
 
-        buildRoadButton = new JButton("Road");
-        buildSettlementButton = new JButton("Settlement");
-        buildCityButton = new JButton("City");
-
         //Road
+        buildRoadButton = new JButton("Road");
         bottombar.add(buildRoadButton);
         buildRoadButton.setBounds(bottombar.getWidth() - 3*(buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
         buildRoadButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                buildSettlementButton.setEnabled(false);
-                buildCityButton.setEnabled(false);
+                setButtonsEnabled(false);
                 getCurPlayer().buildRoad(Board.this);
-                buildSettlementButton.setEnabled(true);
-                buildCityButton.setEnabled(true);
             }
         });
 
         //Settlement
+        buildSettlementButton = new JButton("Settlement");
         bottombar.add(buildSettlementButton);
         buildSettlementButton.setBounds(bottombar.getWidth() - 2*(buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
         buildSettlementButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                buildRoadButton.setEnabled(false);
-                buildCityButton.setEnabled(false);
+                setButtonsEnabled(false);
                 getCurPlayer().buildSettlement(Board.this);
-                buildRoadButton.setEnabled(true);
-                buildCityButton.setEnabled(true);
             }
         });
 
         //City
+        buildCityButton = new JButton("City");
         bottombar.add(buildCityButton);
         buildCityButton.setBounds(bottombar.getWidth() - (buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
         buildCityButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                buildRoadButton.setEnabled(false);
-                buildSettlementButton.setEnabled(false);
+                setButtonsEnabled(false);
                 getCurPlayer().buildCity(Board.this);
-                buildRoadButton.setEnabled(true);
-                buildSettlementButton.setEnabled(true);
             }
         });
 
@@ -183,11 +187,8 @@ public class Board extends JFrame{
         rollDiceButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 rollDice();
-                buildRoadButton.setEnabled(true);
-                buildSettlementButton.setEnabled(true);
-                buildCityButton.setEnabled(true);
+                setButtonsEnabled(true);
                 rollDiceButton.setEnabled(false);
-                endTurnButton.setEnabled(true);
             }
         });
         rollLabel = new JLabel("--");
@@ -201,15 +202,12 @@ public class Board extends JFrame{
         endTurnButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 //Check win
-                if (getCurPlayer().getVictoryPoints() >= VPRequirement)
+                if (getCurPlayer().getVictoryPoints() >= VPRequirement) 
                     System.out.println("Player " + (curPlayerIndex+1) + " Wins! (" + getCurPlayer().getVictoryPoints() + " Victory Points)");
 
                 nextPlayer();
-                buildRoadButton.setEnabled(false);
-                buildSettlementButton.setEnabled(false);
-                buildCityButton.setEnabled(false);
+                setButtonsEnabled(false);
                 rollDiceButton.setEnabled(true);
-                endTurnButton.setEnabled(false);
             }
         });
 
@@ -217,7 +215,7 @@ public class Board extends JFrame{
         //Resource/player display
         curPlayerLabel = new JLabel();
         bottombar.add(curPlayerLabel);
-        curPlayerLabel.setBounds(2, 2, 70, 16);
+        curPlayerLabel.setBounds(2, 2, 170, 16);
         
         //Wheat display
         wheatLabel = new JLabel("00");
@@ -278,8 +276,10 @@ public class Board extends JFrame{
 
     public void makeTileRow(int row, int first_column, int last_column) {
         for (int column = first_column; column <= last_column; column++) {
-            Tile tempTile = new Tile(row, column, RESOURCE.values()[rn.nextInt(RESOURCE.values().length)]);
-            int num = rn.nextInt(11) + 2;
+            Tile tempTile = new Tile(row, column, RESOURCE.values()[rn.nextInt(RESOURCE.values().length-1)]);
+            int num = 7;
+            while (num == 7)
+                num = rn.nextInt(11) + 2;
             tilesNumRef[num].add(tempTile); 
             tiles[row][column] = tempTile;
             tempTile.button.setText(""+num);
@@ -681,7 +681,7 @@ public class Board extends JFrame{
     public void nextPlayer() {
         curPlayerIndex++;
         curPlayerIndex %= players.size();
-        curPlayerLabel.setText("Player " + (curPlayerIndex+1));
+        curPlayerLabel.setText("Player " + (curPlayerIndex+1) + " (" + getCurPlayer().getVictoryPoints() + " VP)");
         curPlayerLabel.setForeground(getCurPlayer().getColor());
 
         updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
@@ -695,6 +695,21 @@ public class Board extends JFrame{
 
     public Player getCurPlayer() {
         return players.get(curPlayerIndex);
+    }
+
+    public void setButtonsEnabled(boolean enabled) {
+        for (Component c : Board.this.sidebar.getComponents()) {
+            try {
+                JButton b = (JButton) c;
+                b.setEnabled(enabled);
+            } catch (Exception excpt) {}
+        }
+        for (Component c : Board.this.bottombar.getComponents()) {
+            try {
+                JButton b = (JButton) c;
+                b.setEnabled(enabled);
+            } catch (Exception excpt) {}
+        }
     }
 
 }

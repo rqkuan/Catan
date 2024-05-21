@@ -8,7 +8,7 @@ public class Player {
     private LinkedList<Corner> accessibleCorners = new LinkedList<Corner>();
     private int[] devCards = new int[Board.DEVELOPMENT.values().length];
     protected int[] resources = new int[Board.RESOURCE.values().length-1];
-    private int settlements = 4, cities = 4, victoryPoints = -2;
+    private int settlements = 4, cities = 4, victoryPoints = 0;
     private boolean developed = false;
     private Color color;
 
@@ -48,6 +48,10 @@ public class Player {
 
                 //Hide (and disable) road buttons;
                 board.hideRoads();
+
+                //Renable sidebar and bottombar buttons
+                board.setButtonsEnabled(true);
+                board.rollDiceButton.setEnabled(false);
             }
                 
         };
@@ -97,6 +101,10 @@ public class Player {
                 //Hide (and disable) corner buttons;
                 board.hideCorners();
 
+                //Renable sidebar and bottombar buttons
+                board.setButtonsEnabled(true);
+                board.rollDiceButton.setEnabled(false);
+
                 //Victory points and building count
                 victoryPoints++;
                 settlements--;
@@ -140,6 +148,10 @@ public class Player {
 
                 //Hide (and disable) corner buttons;
                 board.hideCorners();
+
+                //Renable sidebar and bottombar buttons
+                board.setButtonsEnabled(true);
+                board.rollDiceButton.setEnabled(false);
 
                 //Victory points and building count
                 victoryPoints++;
