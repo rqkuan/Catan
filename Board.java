@@ -627,6 +627,51 @@ public class Board extends JFrame{
         JButton playerTradeButton = new JButton("Offer trade with players");
         tradeMenu.add(playerTradeButton);
         playerTradeButton.setBounds(70, 210, 170, 20);
+        playerTradeButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                int[] give = new int[RESOURCE.values().length-1];
+                give[RESOURCE.WHEAT.ordinal()] = (Integer) wheatGive.getValue();
+                give[RESOURCE.SHEEP.ordinal()] = (Integer) sheepGive.getValue();
+                give[RESOURCE.TIMBER.ordinal()] = (Integer) timberGive.getValue();
+                give[RESOURCE.BRICK.ordinal()] = (Integer) brickGive.getValue();
+                give[RESOURCE.ORE.ordinal()] = (Integer) oreGive.getValue();
+
+                int[] receive = new int[RESOURCE.values().length-1];
+                receive[RESOURCE.WHEAT.ordinal()] = (Integer) wheatReceive.getValue();
+                receive[RESOURCE.SHEEP.ordinal()] = (Integer) sheepReceive.getValue();
+                receive[RESOURCE.TIMBER.ordinal()] = (Integer) timberReceive.getValue();
+                receive[RESOURCE.BRICK.ordinal()] = (Integer) brickReceive.getValue();
+                receive[RESOURCE.ORE.ordinal()] = (Integer) oreReceive.getValue();
+
+                JPopupMenu playerTradeSelect = new JPopupMenu();
+                for (int i = 0; i < players.size(); i++) {
+                    JMenuItem tempMenuItem = new JMenuItem("Player " + (i+1));
+                    tempMenuItem.setForeground(players.get(i).getColor());
+
+                    final Player p = players.get(i);
+                    tempMenuItem.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            for (int i = 0; i < RESOURCE.values().length-1; i++) {
+                                if (getCurPlayer().getResource(RESOURCE.values()[i]) < give[i])
+                                    return;
+                                if (p.getResource(RESOURCE.values()[i]) < receive[i])
+                                    return;
+                            }
+                            getCurPlayer().trade(p, give, receive);
+                            Board.this.updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
+                            Board.this.updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
+                            Board.this.updateResourceAmount(timberAmount, RESOURCE.TIMBER);
+                            Board.this.updateResourceAmount(brickAmount, RESOURCE.BRICK);
+                            Board.this.updateResourceAmount(oreAmount, RESOURCE.ORE);
+                            tradeMenu.dispose();
+                        }
+                    });
+                    playerTradeSelect.add(tempMenuItem);
+                }
+
+                playerTradeSelect.show(tradeMenu, 0, 0);
+            }
+        });
     }
 
     public void nextPlayer() {

@@ -146,6 +146,8 @@ public class Player {
     }
 
     public void addResource(Board.RESOURCE resource, int amount) {
+        if (resource == Board.RESOURCE.NONE)
+            return;
         resources[resource.ordinal()] += amount;
     }
 
