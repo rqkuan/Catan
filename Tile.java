@@ -46,6 +46,8 @@ public class Tile extends JPanel {
                 //Updating the tile
                 thief = true;
                 Tile.this.iconDisplay.setEnabled(false);
+
+                Catan.semaphore.release();
                 
                 //Letting the player steal from others
                 LinkedList<Player> thiefed = new LinkedList<Player>();
@@ -63,11 +65,17 @@ public class Tile extends JPanel {
                 }
 
                 //Select player to steal from
-                JPopupMenu playerThiefSelect = new JPopupMenu();
+                if (thiefed.size() == 0) {
+                    Catan.semaphore.release();
+                    return;
+                }
+
+                ForcedPopup playerThiefSelect = new ForcedPopup(); //This forces the player to choose someone to steal from
+
                 for (Player p : thiefed) {
-                    JMenuItem tempMenuItem = new JMenuItem("Player " + (board.players.indexOf(p)+1));
-                    tempMenuItem.setForeground(p.getColor());
-                    tempMenuItem.addActionListener(new ActionListener() {
+                    JMenuItem playerThiefMenuItem = new JMenuItem("Player " + (board.players.indexOf(p)+1));
+                    playerThiefMenuItem.setForeground(p.getColor());
+                    playerThiefMenuItem.addActionListener(new ActionListener() {
                         public void actionPerformed(ActionEvent e) {
                             //Randomizing the stolen resource
                             int n = Board.rn.nextInt(p.getTotalResources());
@@ -88,11 +96,12 @@ public class Tile extends JPanel {
                             
                             Catan.semaphore.release();
 
+                            playerThiefSelect.removeAll();
                             Tile.this.remove(playerThiefSelect);
-                            return;
+                            playerThiefSelect.closePopup();
                         }
                     });
-                    playerThiefSelect.add(tempMenuItem);
+                    playerThiefSelect.add(playerThiefMenuItem);
                 }
                 playerThiefSelect.show(Tile.this, 0, 0);
             }

@@ -26,11 +26,40 @@ public class Board extends JFrame{
     }
 
     public static enum DEVELOPMENT {
-        KNIGHT, 
-        VICTORY_POINT,
-        ROAD_BUILDING,
-        YEAR_OF_PLENTY,
-        MONOPOLY;
+        KNIGHT("Knight") {
+            public void developmentEffect(Board board) {
+                board.offerPlaceThief();
+            }
+        },
+        VICTORY_POINT("Victory Point") {
+            public void developmentEffect(Board board) {
+                //No Effect   
+            }
+        },
+        ROAD_BUILDING("Road Building") {
+            public void developmentEffect(Board board) {
+                board.getCurPlayer().addResource(RESOURCE.TIMBER, 2);
+                board.getCurPlayer().addResource(RESOURCE.BRICK, 2);
+                board.getCurPlayer().buildRoad(board);
+                board.getCurPlayer().buildRoad(board);
+            }
+        },
+        YEAR_OF_PLENTY("Year of Plenty") {
+            public void developmentEffect(Board board) {
+                
+            }
+        },
+        MONOPOLY("Monopoly") {
+            public void developmentEffect(Board board) {
+                
+            }
+        };
+
+        public String cardName;
+        public abstract void developmentEffect(Board board);
+        private DEVELOPMENT (String cardName) {
+            this.cardName = cardName;
+        }
     }
 
     //Board attributes
@@ -41,23 +70,29 @@ public class Board extends JFrame{
     public Tile tiles[][] = new Tile[5][5]; 
     public Corner corners[][] = new Corner[6][12]; 
     private Road roads[][] = new Road[11][11]; 
-    private int resourceLimit, devCards[], VPRequirement;
+    private int resourceLimit, VPRequirement;
+    private LinkedList<DEVELOPMENT> developmentCards = new LinkedList<DEVELOPMENT>();
     public int curPlayerIndex = 0;
     public static Random rn = new Random();
 
     //GUI objects/attributes
     private static final int mapXOffset = 88, mapYOffset = 15;
     public JPanel sidebar, bottombar, map;
-    public JButton buildRoadButton, buildSettlementButton, buildCityButton, rollDiceButton, endTurnButton, tradeButton;
+    public JButton buildRoadButton, buildSettlementButton, buildCityButton, rollDiceButton, endTurnButton, tradeButton, buyDevCardButton, developButton;
     public JLabel curPlayerLabel, wheatLabel, sheepLabel, timberLabel, brickLabel, oreLabel, 
                     rollLabel, wheatAmount, sheepAmount, timberAmount, brickAmount, oreAmount;
 
+
     public Board(int resourceLimit, int[] devCards, int VPRequirement) {
         this.resourceLimit = resourceLimit;
-        this.devCards = devCards;
+        DEVELOPMENT[] tempDevs = DEVELOPMENT.values();
+        for (int d = 0; d < devCards.length; d++) 
+            for (int i = 0; i < devCards[d]; i++)
+                developmentCards.add(tempDevs[d]);
         this.VPRequirement = VPRequirement;
 
-        //Create gui upon construction of board object
+
+    //Create gui upon construction of board object
 
         //Setting the Frame
         setTitle("Catan");
@@ -84,8 +119,7 @@ public class Board extends JFrame{
         bottombar.setLayout(null);
 
 
-
-        //Map
+    //Map
         map = new JPanel();
         add(map);
         map.setBounds(0, 0, 640, 450);
@@ -144,7 +178,7 @@ public class Board extends JFrame{
         map.validate();
 
 
-        //Buttons for building
+    //Buttons for building, trading, etc. 
         int buildButtonWidth = 100;
         int buildButtonHeight = 60;
 
@@ -212,8 +246,47 @@ public class Board extends JFrame{
             }
         });
 
+        //Trading
+        tradeButton = new JButton("Trade");
+        sidebar.add(tradeButton);
+        tradeButton.setBounds(5, 360 + (bottombar.getHeight() - buildButtonHeight), sidebar.getWidth() - 10, buildButtonHeight);
+        tradeButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                offerTrades();
+            }
+        });
 
-        //Resource/player display
+        //Development Cards
+        buyDevCardButton = new JButton("Development Card");
+        sidebar.add(buyDevCardButton);
+        buyDevCardButton.setBounds(5, 240 + (bottombar.getHeight() - buildButtonHeight), sidebar.getWidth() - 10, buildButtonHeight);
+        buyDevCardButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                getCurPlayer().buyDevelopmentCard(Board.this);
+            }
+        });
+
+        developButton = new JButton("Develop (Use card)");
+        sidebar.add(developButton);
+        developButton.setBounds(5, 300 + (bottombar.getHeight() - buildButtonHeight), sidebar.getWidth() - 10, buildButtonHeight);
+        developButton.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                JPopupMenu devCardSelect = new JPopupMenu();
+                for (DEVELOPMENT d : getCurPlayer().getDevCards()) {
+                    JMenuItem devCardMenuItem = new JMenuItem(d.cardName);
+                    devCardMenuItem.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            d.developmentEffect(Board.this);
+                        }
+                    });
+                    devCardSelect.add(devCardMenuItem);
+                }
+                devCardSelect.show(developButton, 0, 0);
+            }
+        });
+
+
+    //Resource/player display
         curPlayerLabel = new JLabel();
         bottombar.add(curPlayerLabel);
         curPlayerLabel.setBounds(2, 2, 170, 16);
@@ -262,17 +335,6 @@ public class Board extends JFrame{
         oreAmount = new JLabel();
         bottombar.add(oreAmount);
         oreAmount.setBounds(37 + 4*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
-
-
-        //Trading
-        tradeButton = new JButton("Trade");
-        sidebar.add(tradeButton);
-        tradeButton.setBounds(5, 5, 50, 50);
-        tradeButton.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                offerTrades();
-            }
-        });
     }
 
     public void makeTileRow(int row, int first_column, int last_column) {
@@ -530,6 +592,7 @@ public class Board extends JFrame{
     public void offerTrades() {
         JDialog tradeMenu = new JDialog(Board.this, "Trading");
         tradeMenu.setSize(300, 280);
+        tradeMenu.setLocation(getX()+getWidth()-tradeMenu.getWidth(), getY());
         tradeMenu.setVisible(true);
         tradeMenu.setLayout(null);
         tradeMenu.setResizable(false);
@@ -655,13 +718,15 @@ public class Board extends JFrame{
                 receive[RESOURCE.BRICK.ordinal()] = (Integer) brickReceive.getValue();
                 receive[RESOURCE.ORE.ordinal()] = (Integer) oreReceive.getValue();
 
-                JPopupMenu playerTradeSelect = new JPopupMenu();
+                ForcedPopup playerTradeSelect = new ForcedPopup();
                 for (int i = 0; i < players.size(); i++) {
-                    JMenuItem tempMenuItem = new JMenuItem("Player " + (i+1));
-                    tempMenuItem.setForeground(players.get(i).getColor());
-
                     final Player p = players.get(i);
-                    tempMenuItem.addActionListener(new ActionListener() {
+                    if (p == getCurPlayer())
+                        continue;
+
+                    JMenuItem playerTradeMenuItem = new JMenuItem("Player " + (i+1));
+                    playerTradeMenuItem.setForeground(players.get(i).getColor());
+                    playerTradeMenuItem.addActionListener(new ActionListener() {
                         public void actionPerformed(ActionEvent e) {
                             for (int i = 0; i < RESOURCE.values().length-1; i++) {
                                 if (getCurPlayer().getResource(RESOURCE.values()[i]) < give[i])
@@ -676,10 +741,18 @@ public class Board extends JFrame{
                             Board.this.updateResourceAmount(brickAmount, RESOURCE.BRICK);
                             Board.this.updateResourceAmount(oreAmount, RESOURCE.ORE);
                             tradeMenu.dispose();
+                            playerTradeSelect.closePopup();
                         }
                     });
-                    playerTradeSelect.add(tempMenuItem);
+                    playerTradeSelect.add(playerTradeMenuItem);
                 }
+                JMenuItem cancelTrade = new JMenuItem("Cancel");
+                playerTradeSelect.add(cancelTrade);
+                cancelTrade.addActionListener(new ActionListener() {
+                    public void actionPerformed(ActionEvent e) {
+                        playerTradeSelect.closePopup();
+                    }
+                });
                 playerTradeSelect.show(tradeMenu, 0, 0);
             }
         });
@@ -703,13 +776,28 @@ public class Board extends JFrame{
                     }
                 }
 
+                //Make sure player selects a tile
                 try {
                     Catan.semaphore.acquire();
                 } catch (InterruptedException excpt) {}
 
+                //Make sure the player can only select that one tile
+                for (Tile[] ts : tiles) {
+                    for (Tile t : ts) {
+                        if (t == null)
+                            continue;
+                        t.button.setEnabled(false);
+                    }
+                }
+
                 //Update previously thieved tile
                 prevThieved.thief = false;
                 prevThieved.iconDisplay.setEnabled(true);
+
+                //Make sure player selects someone to steal from (if possible)
+                try {
+                    Catan.semaphore.acquire();
+                } catch (InterruptedException excpt) {}
 
                 //Update resource display
                 updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
@@ -719,13 +807,6 @@ public class Board extends JFrame{
                 updateResourceAmount(oreAmount, RESOURCE.ORE);
                 
                 //Reseting buttons
-                for (Tile[] ts : tiles) {
-                    for (Tile t : ts) {
-                        if (t == null)
-                            continue;
-                        t.button.setEnabled(false);
-                    }
-                }
                 setButtonsEnabled(true);
                 rollDiceButton.setEnabled(false);
             };
@@ -733,11 +814,14 @@ public class Board extends JFrame{
         placeThief.start();
     }
 
+    public DEVELOPMENT getDevCard() {
+        return developmentCards.remove(rn.nextInt(developmentCards.size()));
+    }
+
     public void nextPlayer() {
         curPlayerIndex++;
         curPlayerIndex %= players.size();
-        curPlayerLabel.setText("Player " + (curPlayerIndex+1) + " (" + getCurPlayer().getVictoryPoints() + " VP)");
-        curPlayerLabel.setForeground(getCurPlayer().getColor());
+        updatePlayerDisplay();
 
         updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
         updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
@@ -746,6 +830,11 @@ public class Board extends JFrame{
         updateResourceAmount(oreAmount, RESOURCE.ORE);
 
         rollLabel.setText("--");
+    }
+
+    public void updatePlayerDisplay() {
+        curPlayerLabel.setText("Player " + (curPlayerIndex+1) + " (" + getCurPlayer().getVictoryPoints() + " VP)");
+        curPlayerLabel.setForeground(getCurPlayer().getColor());
     }
 
     public Player getCurPlayer() {

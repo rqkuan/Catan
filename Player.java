@@ -3,10 +3,12 @@ package Catan;
 import java.awt.*;
 import java.util.*;
 
+import Catan.Board.DEVELOPMENT;
+
 public class Player {
 
     private LinkedList<Corner> accessibleCorners = new LinkedList<Corner>();
-    private int[] devCards = new int[Board.DEVELOPMENT.values().length];
+    private LinkedList<Board.DEVELOPMENT> devCards = new LinkedList<Board.DEVELOPMENT>();
     private int[] resources = new int[Board.RESOURCE.values().length-1];
     private int settlements = 4, cities = 4, victoryPoints = 0, totalResources = 0;
     private boolean developed = false;
@@ -108,6 +110,7 @@ public class Player {
                 //Victory points and building count
                 victoryPoints++;
                 settlements--;
+                board.updatePlayerDisplay();
             }
                 
         };
@@ -157,10 +160,35 @@ public class Player {
                 victoryPoints++;
                 settlements++;
                 cities--;
+                board.updatePlayerDisplay();
             }
                 
         };
         buildCity.start();
+    }
+
+    public void buyDevelopmentCard(Board board) {
+        if (resources[Board.RESOURCE.ORE.ordinal()] == 0)
+            return;
+        if (resources[Board.RESOURCE.SHEEP.ordinal()] == 0)
+            return;
+        if (resources[Board.RESOURCE.WHEAT.ordinal()] == 0)
+            return;
+        resources[Board.RESOURCE.ORE.ordinal()]--;
+        resources[Board.RESOURCE.SHEEP.ordinal()]--;
+        resources[Board.RESOURCE.WHEAT.ordinal()]--;
+        board.updateResourceAmount(board.oreAmount, Board.RESOURCE.ORE);
+        board.updateResourceAmount(board.sheepAmount, Board.RESOURCE.SHEEP);
+        board.updateResourceAmount(board.wheatAmount, Board.RESOURCE.WHEAT);
+
+        DEVELOPMENT devCard = board.getDevCard();
+        devCards.add(devCard);
+
+        //If the card is a victory point
+        if (devCard == DEVELOPMENT.VICTORY_POINT) {
+            victoryPoints++;
+            board.updatePlayerDisplay();
+        }
     }
 
     public void trade(Player player, int[] give, int[] receive) {
@@ -195,6 +223,10 @@ public class Player {
 
     public LinkedList<Corner> getAccessibleCorners() {
         return accessibleCorners;
+    }
+    
+    public LinkedList<Board.DEVELOPMENT> getDevCards() {
+        return devCards;
     }
 
     public int getVictoryPoints() {

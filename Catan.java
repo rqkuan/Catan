@@ -48,13 +48,11 @@ public class Catan {
         
         b.setButtonsEnabled(false);
         for (; b.curPlayerIndex < b.players.size(); b.curPlayerIndex++) {
-            b.curPlayerLabel.setText("Player " + (b.curPlayerIndex+1) + " (0 VP)");
-            b.curPlayerLabel.setForeground(b.getCurPlayer().getColor());
+            b.updatePlayerDisplay();
             b.offerStartingBuild();
         }
         for (b.curPlayerIndex--; b.curPlayerIndex >= 0; b.curPlayerIndex--) {
-            b.curPlayerLabel.setText("Player " + (b.curPlayerIndex+1) + " (0 VP)");
-            b.curPlayerLabel.setForeground(b.getCurPlayer().getColor());
+            b.updatePlayerDisplay();
             b.offerStartingBuild();
             int row = b.recentBuild.getRow();
             int column = b.recentBuild.getColumn();
