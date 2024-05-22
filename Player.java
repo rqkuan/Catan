@@ -7,8 +7,8 @@ public class Player {
 
     private LinkedList<Corner> accessibleCorners = new LinkedList<Corner>();
     private int[] devCards = new int[Board.DEVELOPMENT.values().length];
-    protected int[] resources = new int[Board.RESOURCE.values().length-1];
-    private int settlements = 4, cities = 4, victoryPoints = 0;
+    private int[] resources = new int[Board.RESOURCE.values().length-1];
+    private int settlements = 4, cities = 4, victoryPoints = 0, totalResources = 0;
     private boolean developed = false;
     private Color color;
 
@@ -176,10 +176,15 @@ public class Player {
         if (resource == Board.RESOURCE.NONE)
             return;
         resources[resource.ordinal()] += amount;
+        totalResources += amount;
     }
 
     public int getResource(Board.RESOURCE resource) {
         return resources[resource.ordinal()];
+    }
+
+    public int getTotalResources() {
+        return totalResources;
     }
 
     public void addCorner(Corner c) {

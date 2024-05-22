@@ -3,7 +3,6 @@ package Catan;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.*;
-
 import javax.swing.*;
 
 public class Board extends JFrame{
@@ -42,7 +41,7 @@ public class Board extends JFrame{
     public Tile tiles[][] = new Tile[5][5]; 
     public Corner corners[][] = new Corner[6][12]; 
     private Road roads[][] = new Road[11][11]; 
-    private int resourceLimit, totalResources, devCards[], VPRequirement;
+    private int resourceLimit, devCards[], VPRequirement;
     public int curPlayerIndex = 0;
     public static Random rn = new Random();
 
@@ -53,11 +52,8 @@ public class Board extends JFrame{
     public JLabel curPlayerLabel, wheatLabel, sheepLabel, timberLabel, brickLabel, oreLabel, 
                     rollLabel, wheatAmount, sheepAmount, timberAmount, brickAmount, oreAmount;
 
-    public Board(int resourceLimit, int totalResources, int[] devCards, int VPRequirement) {
+    public Board(int resourceLimit, int[] devCards, int VPRequirement) {
         this.resourceLimit = resourceLimit;
-        this.totalResources = totalResources;
-        for (int i = 0; i < RESOURCE.values().length-1; i++)
-            bank.addResource(RESOURCE.values()[i], totalResources);
         this.devCards = devCards;
         this.VPRequirement = VPRequirement;
 
@@ -96,6 +92,7 @@ public class Board extends JFrame{
         map.setBackground(Color.decode("#0099FF"));
         map.setLayout(null);
 
+        //Tiles
         for (int t = 2; t <= 12; t++)
             tilesNumRef[t] = new LinkedList<Tile>();
 
@@ -104,15 +101,17 @@ public class Board extends JFrame{
         makeTileRow(2, 0, 4);
         makeTileRow(3, 1, 4);
         makeTileRow(4, 1, 3);
-        while (true) {
+        while (true) {  //Desert tile
             int row = rn.nextInt(5);
             int column = rn.nextInt(5);
             if (tiles[row][column] == null)
                 continue;
             map.remove(tiles[row][column]);
 
-            Tile tempTile = new Tile(row, column, RESOURCE.NONE);
+            Tile tempTile = new Tile(this, row, column, RESOURCE.NONE);
+            tempTile.thief = true;
             tiles[row][column] = tempTile;
+
             //Setting up in GUI
             map.add(tempTile);
             int x = (Tile.WIDTH - Tile.WIDTH/20)*column - (int)(0.5 * (row%2) * (Tile.WIDTH - 4));
@@ -121,6 +120,7 @@ public class Board extends JFrame{
             break;
         }
 
+        //Roads
         makeRoadRow(0, 2, 7);
         makeRoadRow(1, 1, 4);
         makeRoadRow(2, 2, 9);
@@ -134,6 +134,7 @@ public class Board extends JFrame{
         makeRoadRow(10, 3, 8);
         map.validate();
 
+        //Corners
         makeCornerRow(0, 2, 8); 
         makeCornerRow(1, 2, 10);
         makeCornerRow(2, 0, 10);
@@ -186,9 +187,9 @@ public class Board extends JFrame{
         rollDiceButton.setBounds(5, 450 + (bottombar.getHeight() - buildButtonHeight)/2, (sidebar.getWidth() - 15)/2, buildButtonHeight);
         rollDiceButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                rollDice();
                 setButtonsEnabled(true);
                 rollDiceButton.setEnabled(false);
+                rollDice();
             }
         });
         rollLabel = new JLabel("--");
@@ -276,7 +277,7 @@ public class Board extends JFrame{
 
     public void makeTileRow(int row, int first_column, int last_column) {
         for (int column = first_column; column <= last_column; column++) {
-            Tile tempTile = new Tile(row, column, RESOURCE.values()[rn.nextInt(RESOURCE.values().length-1)]);
+            Tile tempTile = new Tile(this, row, column, RESOURCE.values()[rn.nextInt(RESOURCE.values().length-1)]);
             int num = 7;
             while (num == 7)
                 num = rn.nextInt(11) + 2;
@@ -490,11 +491,17 @@ public class Board extends JFrame{
     public void rollDice() {
         int roll = rn.nextInt(6)+1 + rn.nextInt(6)+1;
         rollLabel.setText(""+roll);
+        if (roll == 7) {
+            //Player places thief
+            offerPlaceThief();
+            return;
+        }
+
         for (Tile t : tilesNumRef[roll]) {
             //Top row of corners
             for (int i = 0; i < 3; i++) {
                 Corner c = corners[t.getRow()][t.getColumn()*2 + i];
-                if (c.getOwner() != null)
+                if (c.getOwner() != null) 
                     c.getOwner().addResource(t.getResource(), c.getStructure().generateAmount);
             }
             //Bottom row of corners
@@ -541,7 +548,7 @@ public class Board extends JFrame{
         JSpinner wheatGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.WHEAT), 1));
         tradeMenu.add(wheatGive);
         wheatGive.setBounds(80, 40, 50, 20);
-        JSpinner wheatReceive = new JSpinner(new SpinnerNumberModel(0, 0, totalResources, 1));
+        JSpinner wheatReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
         tradeMenu.add(wheatReceive);
         wheatReceive.setBounds(180, 40, 50, 20);
 
@@ -552,7 +559,7 @@ public class Board extends JFrame{
         JSpinner sheepGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.SHEEP), 1));
         tradeMenu.add(sheepGive);
         sheepGive.setBounds(80, 40 + 1*25, 50, 20);
-        JSpinner sheepReceive = new JSpinner(new SpinnerNumberModel(0, 0, totalResources, 1));
+        JSpinner sheepReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
         tradeMenu.add(sheepReceive);
         sheepReceive.setBounds(180, 40 + 1*25, 50, 20);
 
@@ -563,7 +570,7 @@ public class Board extends JFrame{
         JSpinner timberGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.TIMBER), 1));
         tradeMenu.add(timberGive);
         timberGive.setBounds(80, 40 + 2*25, 50, 20);
-        JSpinner timberReceive = new JSpinner(new SpinnerNumberModel(0, 0, totalResources, 1));
+        JSpinner timberReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
         tradeMenu.add(timberReceive);
         timberReceive.setBounds(180, 40 + 2*25, 50, 20);
 
@@ -574,7 +581,7 @@ public class Board extends JFrame{
         JSpinner brickGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.BRICK), 1));
         tradeMenu.add(brickGive);
         brickGive.setBounds(80, 40 + 3*25, 50, 20);
-        JSpinner brickReceive = new JSpinner(new SpinnerNumberModel(0, 0, totalResources, 1));
+        JSpinner brickReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
         tradeMenu.add(brickReceive);
         brickReceive.setBounds(180, 40 + 3*25, 50, 20);
 
@@ -585,7 +592,7 @@ public class Board extends JFrame{
         JSpinner oreGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.ORE), 1));
         tradeMenu.add(oreGive);
         oreGive.setBounds(80, 40 + 4*25, 50, 20);
-        JSpinner oreReceive = new JSpinner(new SpinnerNumberModel(0, 0, totalResources, 1));
+        JSpinner oreReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
         tradeMenu.add(oreReceive);
         oreReceive.setBounds(180, 40 + 4*25, 50, 20);
 
@@ -676,6 +683,54 @@ public class Board extends JFrame{
                 playerTradeSelect.show(tradeMenu, 0, 0);
             }
         });
+    }
+
+    public void offerPlaceThief() {
+        setButtonsEnabled(false);
+        Thread placeThief = new Thread() {
+            @Override
+            public void run() {
+                //Let player place the thief
+                Tile prevThieved = null;
+                for (Tile[] ts : tiles) {
+                    for (Tile t : ts) {
+                        if (t == null)
+                            continue;
+                        if (!t.thief)
+                            t.button.setEnabled(true);
+                        else
+                            prevThieved = t;
+                    }
+                }
+
+                try {
+                    Catan.semaphore.acquire();
+                } catch (InterruptedException excpt) {}
+
+                //Update previously thieved tile
+                prevThieved.thief = false;
+                prevThieved.iconDisplay.setEnabled(true);
+
+                //Update resource display
+                updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
+                updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
+                updateResourceAmount(timberAmount, RESOURCE.TIMBER);
+                updateResourceAmount(brickAmount, RESOURCE.BRICK);
+                updateResourceAmount(oreAmount, RESOURCE.ORE);
+                
+                //Reseting buttons
+                for (Tile[] ts : tiles) {
+                    for (Tile t : ts) {
+                        if (t == null)
+                            continue;
+                        t.button.setEnabled(false);
+                    }
+                }
+                setButtonsEnabled(true);
+                rollDiceButton.setEnabled(false);
+            };
+        };
+        placeThief.start();
     }
 
     public void nextPlayer() {

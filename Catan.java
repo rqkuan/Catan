@@ -41,16 +41,12 @@ public class Catan {
     public static void main(String[] args) throws InterruptedException {
         int devCards[] = {14, 5, 2, 2, 2};
 
-        Board b = new Board(7, 18, devCards, 10);
+        Board b = new Board(7, devCards, 10);
         b.players.add(new Player(new Color(255, 0, 0)));
         b.players.add(new Player(new Color(0, 255, 0)));
         b.players.add(new Player(new Color(0, 0, 255)));
         
-        b.buildRoadButton.setEnabled(false);
-        b.buildSettlementButton.setEnabled(false);
-        b.buildCityButton.setEnabled(false);
-        b.rollDiceButton.setEnabled(false);
-        b.endTurnButton.setEnabled(false);
+        b.setButtonsEnabled(false);
         for (; b.curPlayerIndex < b.players.size(); b.curPlayerIndex++) {
             b.curPlayerLabel.setText("Player " + (b.curPlayerIndex+1) + " (0 VP)");
             b.curPlayerLabel.setForeground(b.getCurPlayer().getColor());
