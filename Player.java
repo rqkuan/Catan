@@ -27,8 +27,8 @@ public class Player {
             return;
         resources[Board.RESOURCE.TIMBER.ordinal()]--;
         resources[Board.RESOURCE.BRICK.ordinal()]--;
-        board.updateResourceAmount(board.timberAmount, Board.RESOURCE.TIMBER);
-        board.updateResourceAmount(board.brickAmount, Board.RESOURCE.BRICK);
+        Board.RESOURCE.TIMBER.updateDisplay(board);
+        Board.RESOURCE.BRICK.updateDisplay(board);
         
         Thread buildRoad = new Thread() {
             @Override
@@ -76,10 +76,10 @@ public class Player {
         resources[Board.RESOURCE.BRICK.ordinal()]--;
         resources[Board.RESOURCE.SHEEP.ordinal()]--;
         resources[Board.RESOURCE.WHEAT.ordinal()]--;
-        board.updateResourceAmount(board.timberAmount, Board.RESOURCE.TIMBER);
-        board.updateResourceAmount(board.brickAmount, Board.RESOURCE.BRICK);
-        board.updateResourceAmount(board.sheepAmount, Board.RESOURCE.SHEEP);
-        board.updateResourceAmount(board.wheatAmount, Board.RESOURCE.WHEAT);
+        Board.RESOURCE.TIMBER.updateDisplay(board);
+        Board.RESOURCE.BRICK.updateDisplay(board);
+        Board.RESOURCE.SHEEP.updateDisplay(board);
+        Board.RESOURCE.WHEAT.updateDisplay(board);
 
         Thread buildSettlement = new Thread() {
             @Override
@@ -127,8 +127,8 @@ public class Player {
             return;
         resources[Board.RESOURCE.ORE.ordinal()] -= 3;
         resources[Board.RESOURCE.WHEAT.ordinal()] -= 2;
-        board.updateResourceAmount(board.oreAmount, Board.RESOURCE.ORE);
-        board.updateResourceAmount(board.wheatAmount, Board.RESOURCE.WHEAT);
+        Board.RESOURCE.ORE.updateDisplay(board);
+        Board.RESOURCE.WHEAT.updateDisplay(board);
 
         Thread buildCity = new Thread() {
             @Override
@@ -177,9 +177,9 @@ public class Player {
         resources[Board.RESOURCE.ORE.ordinal()]--;
         resources[Board.RESOURCE.SHEEP.ordinal()]--;
         resources[Board.RESOURCE.WHEAT.ordinal()]--;
-        board.updateResourceAmount(board.oreAmount, Board.RESOURCE.ORE);
-        board.updateResourceAmount(board.sheepAmount, Board.RESOURCE.SHEEP);
-        board.updateResourceAmount(board.wheatAmount, Board.RESOURCE.WHEAT);
+        Board.RESOURCE.ORE.updateDisplay(board);
+        Board.RESOURCE.SHEEP.updateDisplay(board);
+        Board.RESOURCE.WHEAT.updateDisplay(board);
 
         DEVELOPMENT devCard = board.getDevCard();
         devCards.add(devCard);

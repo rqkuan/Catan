@@ -16,6 +16,17 @@ public class Board extends JFrame{
         NONE("Catan/Icons/CatanWheatTile.png");
 
         public ImageIcon icon;
+        public JLabel displayLabel = new JLabel(), amountLabel = new JLabel("00");
+        public static final int displayLabelWidth = 50, displayLabelHeight = 72, amountLabelWidth = 30, amountLabelHeight = 30;
+
+        public void updateDisplay(Board board) {
+            String str = "";
+            if (board.getCurPlayer().getResource(this) < 10)
+                str += "0";
+            str += board.getCurPlayer().getResource(this);
+            this.amountLabel.setText(str);
+        }
+
         private RESOURCE (String image_path) {
             icon = Catan.getResizedIcon(Tile.WIDTH, Tile.HEIGHT, image_path);
         }
@@ -46,12 +57,70 @@ public class Board extends JFrame{
         },
         YEAR_OF_PLENTY("Year of Plenty") {
             public void developmentEffect(Board board) {
-                
+                board.setButtonsEnabled(false);
+                ForcedPopup resourceSelect = new ForcedPopup();
+                for (RESOURCE r : Board.RESOURCE.values()) {
+                    if (r == RESOURCE.NONE)
+                        continue;
+                    JMenuItem resourceMenuItem = new JMenuItem(r.name().charAt(0) + r.name().substring(1).toLowerCase());
+                    resourceMenuItem.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            board.getCurPlayer().addResource(r, 1);
+                            Catan.semaphore.release();
+                        }
+                    });
+                    resourceSelect.add(resourceMenuItem);
+                }
+
+                Thread yearOfPlenty = new Thread() {
+                    public void run() {
+                        for (int t = 0; t < 2; t++) {
+                            resourceSelect.show(board.developButton, 0, 0);
+                            try {
+                                Catan.semaphore.acquire();
+                            } catch (InterruptedException excpt) {}
+                        }
+                        board.setButtonsEnabled(true);
+                        board.rollDiceButton.setEnabled(false);
+                    }
+                };
+                yearOfPlenty.start();
             }
         },
         MONOPOLY("Monopoly") {
             public void developmentEffect(Board board) {
-                
+                board.setButtonsEnabled(false);
+                ForcedPopup resourceSelect = new ForcedPopup();
+                for (RESOURCE r : Board.RESOURCE.values()) {
+                    if (r == RESOURCE.NONE)
+                        continue;
+                    JMenuItem resourceMenuItem = new JMenuItem(r.name().charAt(0) + r.name().substring(1).toLowerCase());
+                    resourceMenuItem.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            for (Player p : board.players) {
+                                if (p == board.getCurPlayer())
+                                    continue;
+                                int[] receive = {0, 0, 0, 0, 0};
+                                receive[r.ordinal()] = p.getResource(r);
+                                board.getCurPlayer().trade(p, new int[] {0, 0, 0, 0, 0}, receive);
+                            }
+                            Catan.semaphore.release();
+                        }
+                    });
+                    resourceSelect.add(resourceMenuItem);
+                }
+
+                Thread monopoly = new Thread() {
+                    public void run() {
+                        resourceSelect.show(board.developButton, 0, 0);
+                        try {
+                            Catan.semaphore.acquire();
+                        } catch (InterruptedException excpt) {}
+                        board.setButtonsEnabled(true);
+                        board.rollDiceButton.setEnabled(false);
+                    }
+                };
+                monopoly.start();
             }
         };
 
@@ -79,8 +148,7 @@ public class Board extends JFrame{
     private static final int mapXOffset = 88, mapYOffset = 15;
     public JPanel sidebar, bottombar, map;
     public JButton buildRoadButton, buildSettlementButton, buildCityButton, rollDiceButton, endTurnButton, tradeButton, buyDevCardButton, developButton;
-    public JLabel curPlayerLabel, wheatLabel, sheepLabel, timberLabel, brickLabel, oreLabel, 
-                    rollLabel, wheatAmount, sheepAmount, timberAmount, brickAmount, oreAmount;
+    public JLabel curPlayerLabel, rollLabel;
 
 
     public Board(int resourceLimit, int[] devCards, int VPRequirement) {
@@ -252,6 +320,7 @@ public class Board extends JFrame{
         tradeButton.setBounds(5, 360 + (bottombar.getHeight() - buildButtonHeight), sidebar.getWidth() - 10, buildButtonHeight);
         tradeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                setButtonsEnabled(false);
                 offerTrades();
             }
         });
@@ -276,10 +345,13 @@ public class Board extends JFrame{
                     JMenuItem devCardMenuItem = new JMenuItem(d.cardName);
                     devCardMenuItem.addActionListener(new ActionListener() {
                         public void actionPerformed(ActionEvent e) {
+                            getCurPlayer().getDevCards().remove(d);
                             d.developmentEffect(Board.this);
                         }
                     });
                     devCardSelect.add(devCardMenuItem);
+                    if (d == DEVELOPMENT.VICTORY_POINT)
+                        devCardMenuItem.setEnabled(false);
                 }
                 devCardSelect.show(developButton, 0, 0);
             }
@@ -291,50 +363,15 @@ public class Board extends JFrame{
         bottombar.add(curPlayerLabel);
         curPlayerLabel.setBounds(2, 2, 170, 16);
         
-        //Wheat display
-        wheatLabel = new JLabel("00");
-        bottombar.add(wheatLabel);
-        wheatLabel.setBounds(20, 25, 50, bottombar.getHeight()-50);
-        wheatLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanWheat.png"));
-        wheatAmount = new JLabel();
-        bottombar.add(wheatAmount);
-        wheatAmount.setBounds(37, wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
-        
-        //Sheep display
-        sheepLabel = new JLabel("00");
-        bottombar.add(sheepLabel);
-        sheepLabel.setBounds(wheatLabel.getX() + 1*(60), wheatLabel.getY(), wheatLabel.getWidth(), wheatLabel.getHeight());
-        sheepLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanSheep.png"));
-        sheepAmount = new JLabel();
-        bottombar.add(sheepAmount);
-        sheepAmount.setBounds(37 + 1*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
-        
-        //Timber display
-        timberLabel = new JLabel("00");
-        bottombar.add(timberLabel);
-        timberLabel.setBounds(wheatLabel.getX() + 2*(60), wheatLabel.getY(), wheatLabel.getWidth(), wheatLabel.getHeight());
-        timberLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanTimber.png"));
-        timberAmount = new JLabel();
-        bottombar.add(timberAmount);
-        timberAmount.setBounds(37 + 2*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
-        
-        //Brick display
-        brickLabel = new JLabel("00");
-        bottombar.add(brickLabel);
-        brickLabel.setBounds(wheatLabel.getX() + 3*(60), wheatLabel.getY(), wheatLabel.getWidth(), wheatLabel.getHeight());
-        brickLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanBrick.png"));
-        brickAmount = new JLabel();
-        bottombar.add(brickAmount);
-        brickAmount.setBounds(37 + 3*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
-        
-        //Ore display
-        oreLabel = new JLabel("00");
-        bottombar.add(oreLabel);
-        oreLabel.setBounds(wheatLabel.getX() + 4*(60), wheatLabel.getY(), wheatLabel.getWidth(), wheatLabel.getHeight());
-        oreLabel.setIcon(Catan.getResizedIcon(wheatLabel.getWidth(), wheatLabel.getHeight(), "Catan/Icons/CatanOre.png"));
-        oreAmount = new JLabel();
-        bottombar.add(oreAmount);
-        oreAmount.setBounds(37 + 4*(60), wheatLabel.getY() - 5 + wheatLabel.getHeight(), 30, 30);
+        for (RESOURCE r : RESOURCE.values()) {
+            if (r == RESOURCE.NONE)
+                continue;
+            bottombar.add(r.displayLabel);
+            r.displayLabel.setBounds(20 + r.ordinal()*(60), 25, RESOURCE.displayLabelWidth, RESOURCE.displayLabelHeight);
+            r.displayLabel.setIcon(Catan.getResizedIcon(RESOURCE.displayLabelWidth, RESOURCE.displayLabelHeight, "Catan/Icons/Catan" + r.name().charAt(0) + r.name().substring(1).toLowerCase() + ".png"));
+            bottombar.add(r.amountLabel);
+            r.amountLabel.setBounds(37 + r.ordinal()*(60), 20 + RESOURCE.displayLabelHeight, RESOURCE.amountLabelWidth, RESOURCE.amountLabelHeight);
+        }
     }
 
     public void makeTileRow(int row, int first_column, int last_column) {
@@ -574,19 +611,9 @@ public class Board extends JFrame{
             }
         }
 
-        updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
-        updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
-        updateResourceAmount(timberAmount, RESOURCE.TIMBER);
-        updateResourceAmount(brickAmount, RESOURCE.BRICK);
-        updateResourceAmount(oreAmount, RESOURCE.ORE);
-    }
-
-    public void updateResourceAmount(JLabel Label, RESOURCE resource) {
-        String str = "";
-        if (getCurPlayer().getResource(resource) < 10)
-            str += "0";
-        str += getCurPlayer().getResource(resource);
-        Label.setText(str);
+        for (RESOURCE r : RESOURCE.values()) 
+            if (r != RESOURCE.NONE) 
+                r.updateDisplay(this);
     }
 
     public void offerTrades() {
@@ -690,12 +717,13 @@ public class Board extends JFrame{
                 else if ((Integer)oreGive.getValue() == 4)
                     getCurPlayer().trade(Board.this.bank, new int[] {0, 0, 0, 0, 4}, receive);
                 
-                updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
-                updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
-                updateResourceAmount(timberAmount, RESOURCE.TIMBER);
-                updateResourceAmount(brickAmount, RESOURCE.BRICK);
-                updateResourceAmount(oreAmount, RESOURCE.ORE);
+                for (RESOURCE r : RESOURCE.values()) 
+                if (r != RESOURCE.NONE) 
+                    r.updateDisplay(Board.this);
                 tradeMenu.dispose();
+                
+                setButtonsEnabled(true);
+                rollDiceButton.setEnabled(false);
             }
         });
 
@@ -735,13 +763,13 @@ public class Board extends JFrame{
                                     return;
                             }
                             getCurPlayer().trade(p, give, receive);
-                            Board.this.updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
-                            Board.this.updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
-                            Board.this.updateResourceAmount(timberAmount, RESOURCE.TIMBER);
-                            Board.this.updateResourceAmount(brickAmount, RESOURCE.BRICK);
-                            Board.this.updateResourceAmount(oreAmount, RESOURCE.ORE);
+                            for (RESOURCE r : RESOURCE.values()) 
+                                if (r != RESOURCE.NONE) 
+                                    r.updateDisplay(Board.this);
                             tradeMenu.dispose();
                             playerTradeSelect.closePopup();
+                            setButtonsEnabled(true);
+                            rollDiceButton.setEnabled(false);
                         }
                     });
                     playerTradeSelect.add(playerTradeMenuItem);
@@ -800,11 +828,9 @@ public class Board extends JFrame{
                 } catch (InterruptedException excpt) {}
 
                 //Update resource display
-                updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
-                updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
-                updateResourceAmount(timberAmount, RESOURCE.TIMBER);
-                updateResourceAmount(brickAmount, RESOURCE.BRICK);
-                updateResourceAmount(oreAmount, RESOURCE.ORE);
+                for (RESOURCE r : RESOURCE.values()) 
+                    if (r != RESOURCE.NONE) 
+                        r.updateDisplay(Board.this);
                 
                 //Reseting buttons
                 setButtonsEnabled(true);
@@ -823,11 +849,9 @@ public class Board extends JFrame{
         curPlayerIndex %= players.size();
         updatePlayerDisplay();
 
-        updateResourceAmount(wheatAmount, RESOURCE.WHEAT);
-        updateResourceAmount(sheepAmount, RESOURCE.SHEEP);
-        updateResourceAmount(timberAmount, RESOURCE.TIMBER);
-        updateResourceAmount(brickAmount, RESOURCE.BRICK);
-        updateResourceAmount(oreAmount, RESOURCE.ORE);
+        for (RESOURCE r : RESOURCE.values()) 
+            if (r != RESOURCE.NONE) 
+                r.updateDisplay(this);
 
         rollLabel.setText("--");
     }
