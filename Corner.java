@@ -59,10 +59,6 @@ public class Corner extends JButton {
         });
     }
 
-    public void setOwner(Player owner) {
-        this.owner = owner;
-    }
-
     public void setStructure(STRUCTURE structure) {
         this.structure = structure;
     }

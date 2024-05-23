@@ -16,7 +16,8 @@ public class Road extends JPanel {
     public JLabel iconDisplay;
     public JButton button = new JButton();
     public boolean buildable = false;
-
+    
+    private Player owner;
     private Board board;
     private int row, column;
 
@@ -40,24 +41,24 @@ public class Road extends JPanel {
         button.setIcon(Corner.STRUCTURE.NONE.icon);
         setComponentZOrder(button, 0);
 
-        final Road road = this;
         button.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                if (!road.buildable)
+                if (!buildable)
                     return;
-                road.buildable = false;
-                road.button.setEnabled(false);
-                road.iconDisplay.setIcon(Catan.changeIconColor(road.icon, board.getCurPlayer().getColor()));
+                buildable = false;
+                owner = board.getCurPlayer();
+                button.setEnabled(false);
+                iconDisplay.setIcon(Catan.changeIconColor(icon, board.getCurPlayer().getColor()));
                 
                 //Road functionality (update player's accessible corners)
                 if (row % 2 == 0) {
                     //Connects sideways
-                    board.getCurPlayer().addCorner(board.getCorner(road.getRow()/2, road.getColumn()+1));     // right
-                    board.getCurPlayer().addCorner(board.getCorner(road.getRow()/2, road.getColumn()));   // left
+                    board.getCurPlayer().addCorner(board.getCorner(getRow()/2, getColumn()+1));     // right
+                    board.getCurPlayer().addCorner(board.getCorner(getRow()/2, getColumn()));   // left
                 } else {
                     //Connects vertically
-                    board.getCurPlayer().addCorner(board.getCorner(road.getRow()/2, road.getColumn()*2));     // top
-                    board.getCurPlayer().addCorner(board.getCorner(road.getRow()/2+1, road.getColumn()*2 + 1 - 2*((row/2)%2))); // bottom
+                    board.getCurPlayer().addCorner(board.getCorner(getRow()/2, getColumn()*2));     // top
+                    board.getCurPlayer().addCorner(board.getCorner(getRow()/2+1, getColumn()*2 + 1 - 2*((row/2)%2))); // bottom
                 }
 
                 Catan.semaphore.release();
@@ -75,4 +76,7 @@ public class Road extends JPanel {
         return column;
     }
 
+    public Player getOwner() {
+        return owner;
+    }
 }

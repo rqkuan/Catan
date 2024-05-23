@@ -41,6 +41,7 @@ public class Board extends JFrame{
         KNIGHT("Knight") {
             public void developmentEffect(Board board) {
                 board.offerPlaceThief();
+                //Button reset/update is built-in to offerPlaceThief
             }
         },
         VICTORY_POINT("Victory Point") {
@@ -61,6 +62,8 @@ public class Board extends JFrame{
                     }  
                 };
                 roadBuilding.start();
+
+                //Button reset/update is built-in to buildRoad
             }
         },
         YEAR_OF_PLENTY("Year of Plenty") {
@@ -145,12 +148,12 @@ public class Board extends JFrame{
     //Board attributes
     public Corner recentBuild;
     public ArrayList<Player> players = new ArrayList<Player>();
-    public Player bank = new Player(new Color(0, 0, 0));
+    public Player bank = new Player(new Color(0, 0, 0)), longestRoadPlayer = bank;
     private LinkedList<Tile> tilesNumRef[] = new LinkedList[13];
     public Tile tiles[][] = new Tile[5][5]; 
     public Corner corners[][] = new Corner[6][12]; 
     private Road roads[][] = new Road[11][11]; 
-    private int resourceLimit, VPRequirement; 
+    private int resourceLimit, VPRequirement, longestRoad = 4; 
     private LinkedList<DEVELOPMENT> developmentCards = new LinkedList<DEVELOPMENT>();
     public int curPlayerIndex = 0;
     public static Random rn = new Random();
@@ -314,8 +317,16 @@ public class Board extends JFrame{
         endTurnButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 //Check win
-                if (getCurPlayer().getVictoryPoints() >= VPRequirement) 
-                    System.out.println("Player " + (curPlayerIndex+1) + " Wins! (" + getCurPlayer().getVictoryPoints() + " Victory Points)");
+
+                //Check longest road
+                int curPlayerLongestRoad = getCurPlayer().getLongestRoad(Board.this);
+                if (curPlayerLongestRoad > longestRoad) {
+                    longestRoad = curPlayerLongestRoad;
+                    longestRoadPlayer = getCurPlayer();
+                }
+
+                if (getCurPlayerTotalVP() >= VPRequirement) 
+                    System.out.println("Player " + (curPlayerIndex+1) + " Wins! (" + getCurPlayerTotalVP() + " Victory Points)");
 
                 nextPlayer();
                 setButtonsEnabled(false);
@@ -355,8 +366,10 @@ public class Board extends JFrame{
                     JMenuItem devCardMenuItem = new JMenuItem(d.cardName);
                     devCardMenuItem.addActionListener(new ActionListener() {
                         public void actionPerformed(ActionEvent e) {
-                            getCurPlayer().getDevCards().remove(d);
                             d.developmentEffect(Board.this);
+                            getCurPlayer().getDevCards().remove(d);
+                            getCurPlayer().developed = true;
+                            developmentCards.add(d);
                         }
                     });
                     devCardSelect.add(devCardMenuItem);
@@ -539,16 +552,16 @@ public class Board extends JFrame{
                 adjRoads.add(r);
         } catch (IndexOutOfBoundsException excpt) {}
 
-        //Road to the right
-        try {
-            r = roads[row*2][column];
-            if (r != null)
-                adjRoads.add(r);
-        } catch (IndexOutOfBoundsException excpt) {}
-        
         //Road to the left
         try {
             r = roads[row*2][column-1];
+            if (r != null)
+                adjRoads.add(r);
+        } catch (IndexOutOfBoundsException excpt) {}
+
+        //Road to the right
+        try {
+            r = roads[row*2][column];
             if (r != null)
                 adjRoads.add(r);
         } catch (IndexOutOfBoundsException excpt) {}
@@ -562,6 +575,7 @@ public class Board extends JFrame{
         int row = c.getRow();
         int column = c.getColumn();
 
+        //Vertical
         try {
             if (column % 2 == 1) {
                 //Connects upwards
@@ -584,12 +598,14 @@ public class Board extends JFrame{
                 adjCorners.add(c);
         } catch (IndexOutOfBoundsException excpt) {}
 
+        //Left
         try {
             c = corners[row][column-1];
             if (c != null) 
                 adjCorners.add(c);
         } catch (IndexOutOfBoundsException excpt){}
 
+        //Right
         try {
             c = corners[row][column+1];
             if (c != null) 
@@ -883,6 +899,7 @@ public class Board extends JFrame{
         curPlayerIndex++;
         curPlayerIndex %= players.size();
         updatePlayerDisplay();
+        getCurPlayer().developed = false;
 
         for (RESOURCE r : RESOURCE.values()) 
             if (r != RESOURCE.NONE) 
@@ -892,7 +909,7 @@ public class Board extends JFrame{
     }
 
     public void updatePlayerDisplay() {
-        curPlayerLabel.setText("Player " + (curPlayerIndex+1) + " (" + getCurPlayer().getVictoryPoints() + " VP)");
+        curPlayerLabel.setText("Player " + (curPlayerIndex+1) + " (" + getCurPlayerTotalVP() + " VP)");
         curPlayerLabel.setForeground(getCurPlayer().getColor());
     }
 
@@ -922,7 +939,16 @@ public class Board extends JFrame{
         buildSettlementButton.setEnabled(p.canBuildSettlement());
         buildCityButton.setEnabled(p.canBuildCity());
         buyDevCardButton.setEnabled(p.canBuyDevCard() && developmentCards.size() != 0);
-        developButton.setEnabled(p.getDevCards().size() > 0);
+        developButton.setEnabled(p.getDevCards().size() > 0 && !p.developed);
+    }
+
+    private int getCurPlayerTotalVP() {
+        //Calculate totalVP (to include longest road and biggest army)
+        int totalVP = getCurPlayer().getVictoryPoints();
+        if (longestRoadPlayer == getCurPlayer())
+            totalVP += 2;
+        
+        return totalVP;
     }
 
 }

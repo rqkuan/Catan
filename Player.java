@@ -2,6 +2,7 @@ package Catan;
 
 import java.awt.*;
 import java.util.*;
+import java.util.Queue;
 
 import Catan.Board.DEVELOPMENT;
 
@@ -10,16 +11,78 @@ public class Player {
     private LinkedList<Corner> accessibleCorners = new LinkedList<Corner>();
     private LinkedList<Board.DEVELOPMENT> devCards = new LinkedList<Board.DEVELOPMENT>();
     private int[] resources = new int[Board.RESOURCE.values().length-1];
-    private int settlements = 4, cities = 4, victoryPoints = 0, totalResources = 0;
-    private boolean developed = false;
+    private int settlements = 6, cities = 4, victoryPoints = 0, totalResources = 0;
     private Color color;
+    public boolean developed = false;
 
     public Player(Color color) {
         this.color = color;
     }
 
-    public Color getColor() {
-        return color;
+    private int findTreeDiameter(Board board, Corner startingSettlement) {
+        //Use BFS to find longest road (longest path of acyclic graph can be found like a tree diameter)
+        Corner farthest = startingSettlement;
+        
+        HashMap<Corner, Integer> dist = new HashMap<Corner, Integer>();
+        dist.put(startingSettlement, 0);
+
+        Queue<Corner> q = new LinkedList<Corner>();
+        q.add(startingSettlement);
+
+        //First BFS to find farthest corner from start
+        while (!q.isEmpty()) {
+            Corner cur = q.poll();
+            LinkedList<Corner> adjCorners = board.getAdjacentCorners(cur);
+            LinkedList<Road> adjRoads = board.getAdjacentRoads(cur);
+            for (int i = 0; i < adjCorners.size(); i++) {
+                Corner c = adjCorners.get(i);
+
+                if (adjRoads.get(i).getOwner() != this) //Check if the connecting road is owned by the player
+                    continue;
+                if (dist.containsKey(c)) //Corner already visited
+                    continue;
+                int d = dist.get(cur)+1;
+                if (d > dist.get(farthest))
+                    farthest = c;
+                dist.put(c, d);
+                q.add(c);
+            }
+        }
+
+
+        int diameter = 0;
+
+        dist = new HashMap<Corner, Integer>();
+        dist.put(farthest, 0);
+
+        q = new LinkedList<Corner>();
+        q.add(farthest);
+        //First BFS to find farthest corner from previously computed farthest (this distance yields the diameter)
+        while (!q.isEmpty()) {
+            Corner cur = q.poll();
+            LinkedList<Corner> adjCorners = board.getAdjacentCorners(cur);
+            LinkedList<Road> adjRoads = board.getAdjacentRoads(cur);
+            for (int i = 0; i < adjCorners.size(); i++) {
+                Corner c = adjCorners.get(i);
+
+                if (adjRoads.get(i).getOwner() != this) //Check if the connecting road is owned by the player
+                    continue;
+                if (dist.containsKey(c)) //Corner already visited
+                    continue;
+                int d = dist.get(cur)+1;
+                if (d > diameter)
+                    diameter = d;
+                dist.put(c, d);
+                q.add(c);
+            }
+        }
+
+        return diameter;
+    }
+
+    public int getLongestRoad(Board board) {
+        return Integer.max(findTreeDiameter(board, accessibleCorners.get(0))
+                        , findTreeDiameter(board, accessibleCorners.get(1)));
     }
 
     public boolean canBuildRoad(Board board) {
@@ -37,8 +100,8 @@ public class Player {
     }
 
     public void buildRoad(Board board) {
-        resources[Board.RESOURCE.TIMBER.ordinal()]--;
-        resources[Board.RESOURCE.BRICK.ordinal()]--;
+        addResource(Board.RESOURCE.TIMBER, -1);
+        addResource(Board.RESOURCE.BRICK, -1);
         Board.RESOURCE.TIMBER.updateDisplay(board);
         Board.RESOURCE.BRICK.updateDisplay(board);
         
@@ -88,10 +151,10 @@ public class Player {
     }
 
     public void buildSettlement(Board board) {
-        resources[Board.RESOURCE.TIMBER.ordinal()]--;
-        resources[Board.RESOURCE.BRICK.ordinal()]--;
-        resources[Board.RESOURCE.SHEEP.ordinal()]--;
-        resources[Board.RESOURCE.WHEAT.ordinal()]--;
+        addResource(Board.RESOURCE.TIMBER, -1);
+        addResource(Board.RESOURCE.BRICK, -1);
+        addResource(Board.RESOURCE.SHEEP, -1);
+        addResource(Board.RESOURCE.WHEAT, -1);
         Board.RESOURCE.TIMBER.updateDisplay(board);
         Board.RESOURCE.BRICK.updateDisplay(board);
         Board.RESOURCE.SHEEP.updateDisplay(board);
@@ -147,8 +210,8 @@ public class Player {
     }
 
     public void buildCity(Board board) {
-        resources[Board.RESOURCE.ORE.ordinal()] -= 3;
-        resources[Board.RESOURCE.WHEAT.ordinal()] -= 2;
+        addResource(Board.RESOURCE.ORE, -3);
+        addResource(Board.RESOURCE.WHEAT, -2);
         Board.RESOURCE.ORE.updateDisplay(board);
         Board.RESOURCE.WHEAT.updateDisplay(board);
 
@@ -197,9 +260,9 @@ public class Player {
     }
 
     public void buyDevelopmentCard(Board board) {
-        resources[Board.RESOURCE.ORE.ordinal()]--;
-        resources[Board.RESOURCE.SHEEP.ordinal()]--;
-        resources[Board.RESOURCE.WHEAT.ordinal()]--;
+        addResource(Board.RESOURCE.ORE, -1);
+        addResource(Board.RESOURCE.SHEEP, -1);
+        addResource(Board.RESOURCE.WHEAT, -1);
         Board.RESOURCE.ORE.updateDisplay(board);
         Board.RESOURCE.SHEEP.updateDisplay(board);
         Board.RESOURCE.WHEAT.updateDisplay(board);
@@ -220,10 +283,13 @@ public class Player {
 
     public void trade(Player player, int[] give, int[] receive) {
         for (int i = 0; i < Board.RESOURCE.values().length-1; i++) {
-            this.resources[i] -= give[i];
+            resources[i] -= give[i];
             player.resources[i] += give[i];
-            this.resources[i] += receive[i];
+            resources[i] += receive[i];
             player.resources[i] -= receive[i];
+            
+            totalResources -= give[i];
+            totalResources += receive[i];
         }
     }
 
@@ -246,6 +312,10 @@ public class Player {
         if (!accessibleCorners.contains(c)) {
             accessibleCorners.add(c);
         }
+    }
+
+    public Color getColor() {
+        return color;
     }
 
     public LinkedList<Corner> getAccessibleCorners() {

@@ -77,12 +77,21 @@ public class Tile extends JPanel {
                     playerThiefMenuItem.setForeground(p.getColor());
                     playerThiefMenuItem.addActionListener(new ActionListener() {
                         public void actionPerformed(ActionEvent e) {
+                            if (p.getTotalResources() == 0) {
+                                Catan.semaphore.release();
+                                playerThiefSelect.removeAll();
+                                Tile.this.remove(playerThiefSelect);
+                                playerThiefSelect.closePopup();
+                                return;
+                            }
+
                             //Randomizing the stolen resource
                             int n = Board.rn.nextInt(p.getTotalResources());
                             int wheatBound = p.getResource(Board.RESOURCE.WHEAT);
                             int sheepBound = wheatBound + p.getResource(Board.RESOURCE.SHEEP);
                             int timberBound = sheepBound + p.getResource(Board.RESOURCE.TIMBER);
                             int brickBound = timberBound + p.getResource(Board.RESOURCE.BRICK);
+                            
                             if (n < wheatBound) 
                                 p.trade(board.getCurPlayer(), new int[] {1, 0, 0, 0, 0}, new int[] {0, 0, 0, 0, 0});
                             else if (n < sheepBound)
