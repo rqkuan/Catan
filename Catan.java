@@ -94,7 +94,8 @@ public class Catan {
                 } catch (IndexOutOfBoundsException excpt) {}
             }
         }
-        b.curPlayerIndex = 0;
+        b.curPlayerIndex = -1;
+        b.nextPlayer();
         b.rollDiceButton.setEnabled(true);
     }
 

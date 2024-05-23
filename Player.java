@@ -22,9 +22,16 @@ public class Player {
         return color;
     }
 
+    public boolean canBuildRoad() {
+        if (resources[Board.RESOURCE.TIMBER.ordinal()] == 0) 
+            return false;
+        if (resources[Board.RESOURCE.BRICK.ordinal()] == 0)
+            return false;
+        return true;
+    }
+
     public void buildRoad(Board board) {
-        if (resources[Board.RESOURCE.TIMBER.ordinal()] == 0 || resources[Board.RESOURCE.BRICK.ordinal()] == 0)
-            return;
+        
         resources[Board.RESOURCE.TIMBER.ordinal()]--;
         resources[Board.RESOURCE.BRICK.ordinal()]--;
         Board.RESOURCE.TIMBER.updateDisplay(board);
@@ -60,18 +67,26 @@ public class Player {
         buildRoad.start();
     }
 
-    public void buildSettlement(Board board) {
+    public boolean canBuildSettlement() {
         if (settlements == 0)
-            return;
-
+            return false;
         if (resources[Board.RESOURCE.TIMBER.ordinal()] == 0)
-            return;
+            return false;
         if (resources[Board.RESOURCE.BRICK.ordinal()] == 0)
-            return;
+            return false;
         if (resources[Board.RESOURCE.SHEEP.ordinal()] == 0)
-            return;
+            return false;
         if (resources[Board.RESOURCE.WHEAT.ordinal()] == 0)
-            return;
+            return false;
+            
+        for (Corner c : accessibleCorners) {
+            if (c.getOwner() == null && c.isEnabled()) 
+                return true;
+        }
+        return false;
+    }
+
+    public void buildSettlement(Board board) {
         resources[Board.RESOURCE.TIMBER.ordinal()]--;
         resources[Board.RESOURCE.BRICK.ordinal()]--;
         resources[Board.RESOURCE.SHEEP.ordinal()]--;
@@ -117,14 +132,17 @@ public class Player {
         buildSettlement.start();
     }
 
-    public void buildCity(Board board) {
+    public boolean canBuildCity() {
         if (cities == 0)
-            return;
-
+            return false;
         if (resources[Board.RESOURCE.ORE.ordinal()] < 3)
-            return;
+            return false;
         if (resources[Board.RESOURCE.WHEAT.ordinal()] < 2)
-            return;
+            return false;
+        return true;
+    }
+
+    public void buildCity(Board board) {
         resources[Board.RESOURCE.ORE.ordinal()] -= 3;
         resources[Board.RESOURCE.WHEAT.ordinal()] -= 2;
         Board.RESOURCE.ORE.updateDisplay(board);
@@ -167,13 +185,17 @@ public class Player {
         buildCity.start();
     }
 
-    public void buyDevelopmentCard(Board board) {
+    public boolean canBuyDevCard() {
         if (resources[Board.RESOURCE.ORE.ordinal()] == 0)
-            return;
+            return false;
         if (resources[Board.RESOURCE.SHEEP.ordinal()] == 0)
-            return;
+            return false;
         if (resources[Board.RESOURCE.WHEAT.ordinal()] == 0)
-            return;
+            return false;
+        return true;
+    }
+
+    public void buyDevelopmentCard(Board board) {
         resources[Board.RESOURCE.ORE.ordinal()]--;
         resources[Board.RESOURCE.SHEEP.ordinal()]--;
         resources[Board.RESOURCE.WHEAT.ordinal()]--;
@@ -189,6 +211,10 @@ public class Player {
             victoryPoints++;
             board.updatePlayerDisplay();
         }
+
+        //Update buttons from buying cost
+        board.setButtonsEnabled(true);
+        board.rollDiceButton.setEnabled(false);
     }
 
     public void trade(Player player, int[] give, int[] receive) {

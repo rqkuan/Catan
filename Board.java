@@ -67,6 +67,7 @@ public class Board extends JFrame{
                     resourceMenuItem.addActionListener(new ActionListener() {
                         public void actionPerformed(ActionEvent e) {
                             board.getCurPlayer().addResource(r, 1);
+                            r.updateDisplay(board);
                             Catan.semaphore.release();
                         }
                     });
@@ -81,6 +82,7 @@ public class Board extends JFrame{
                                 Catan.semaphore.acquire();
                             } catch (InterruptedException excpt) {}
                         }
+                        resourceSelect.closePopup();
                         board.setButtonsEnabled(true);
                         board.rollDiceButton.setEnabled(false);
                     }
@@ -104,7 +106,9 @@ public class Board extends JFrame{
                                 int[] receive = {0, 0, 0, 0, 0};
                                 receive[r.ordinal()] = p.getResource(r);
                                 board.getCurPlayer().trade(p, new int[] {0, 0, 0, 0, 0}, receive);
+                                resourceSelect.closePopup();
                             }
+                            r.updateDisplay(board);
                             Catan.semaphore.release();
                         }
                     });
@@ -117,6 +121,8 @@ public class Board extends JFrame{
                         try {
                             Catan.semaphore.acquire();
                         } catch (InterruptedException excpt) {}
+                        resourceSelect.closePopup();
+
                         board.setButtonsEnabled(true);
                         board.rollDiceButton.setEnabled(false);
                     }
@@ -290,8 +296,6 @@ public class Board extends JFrame{
         rollDiceButton.setBounds(5, 450 + (bottombar.getHeight() - buildButtonHeight)/2, (sidebar.getWidth() - 15)/2, buildButtonHeight);
         rollDiceButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                setButtonsEnabled(true);
-                rollDiceButton.setEnabled(false);
                 rollDice();
             }
         });
@@ -321,7 +325,8 @@ public class Board extends JFrame{
         tradeButton.setBounds(5, 360 + (bottombar.getHeight() - buildButtonHeight), sidebar.getWidth() - 10, buildButtonHeight);
         tradeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                setButtonsEnabled(false);
+                endTurnButton.setEnabled(false);
+                tradeButton.setEnabled(false);
                 offerTrades();
             }
         });
@@ -615,10 +620,20 @@ public class Board extends JFrame{
         for (RESOURCE r : RESOURCE.values()) 
             if (r != RESOURCE.NONE) 
                 r.updateDisplay(this);
+        
+        //Update buttons for new resources
+        setButtonsEnabled(true);
+        rollDiceButton.setEnabled(false);
     }
 
     public void offerTrades() {
         JDialog tradeMenu = new JDialog(Board.this, "Trading");
+        tradeMenu.addWindowListener(new WindowAdapter() {
+            public void windowClosing(WindowEvent e) {
+                Board.this.setButtonsEnabled(true);
+                Board.this.rollDiceButton.setEnabled(false);
+            }
+        });
         tradeMenu.setSize(300, 280);
         tradeMenu.setLocation(getX()+getWidth()-tradeMenu.getWidth(), getY());
         tradeMenu.setVisible(true);
@@ -680,10 +695,12 @@ public class Board extends JFrame{
                 for (RESOURCE r : RESOURCE.values()) 
                 if (r != RESOURCE.NONE) 
                     r.updateDisplay(Board.this);
-                tradeMenu.dispose();
                 
+                //Resetting
                 setButtonsEnabled(true);
                 rollDiceButton.setEnabled(false);
+                endTurnButton.setEnabled(false);
+                tradeButton.setEnabled(false);
             }
         });
 
@@ -692,6 +709,9 @@ public class Board extends JFrame{
         playerTradeButton.setBounds(70, 210, 170, 20);
         playerTradeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                playerTradeButton.setEnabled(false);
+                bankTradeButton.setEnabled(false);
+
                 int[] give = new int[RESOURCE.values().length-1];
                 int[] receive = new int[RESOURCE.values().length-1];
                 for (RESOURCE r : RESOURCE.values()) {
@@ -721,10 +741,15 @@ public class Board extends JFrame{
                             for (RESOURCE r : RESOURCE.values()) 
                                 if (r != RESOURCE.NONE) 
                                     r.updateDisplay(Board.this);
-                            tradeMenu.dispose();
+
+                            //Resetting
                             playerTradeSelect.closePopup();
+                            playerTradeButton.setEnabled(true);
+                            bankTradeButton.setEnabled(true);
                             setButtonsEnabled(true);
                             rollDiceButton.setEnabled(false);
+                            endTurnButton.setEnabled(false);
+                            tradeButton.setEnabled(false);
                         }
                     });
                     playerTradeSelect.add(playerTradeMenuItem);
@@ -733,7 +758,10 @@ public class Board extends JFrame{
                 playerTradeSelect.add(cancelTrade);
                 cancelTrade.addActionListener(new ActionListener() {
                     public void actionPerformed(ActionEvent e) {
+                        //Reset
                         playerTradeSelect.closePopup();
+                        playerTradeButton.setEnabled(true);
+                        bankTradeButton.setEnabled(true);
                     }
                 });
                 playerTradeSelect.show(tradeMenu, 0, 0);
@@ -833,6 +861,16 @@ public class Board extends JFrame{
                 b.setEnabled(enabled);
             } catch (Exception excpt) {}
         }
+
+        if (!enabled)
+            return;
+
+        Player p = getCurPlayer();
+        buildRoadButton.setEnabled(p.canBuildRoad());
+        buildSettlementButton.setEnabled(p.canBuildSettlement());
+        buildCityButton.setEnabled(p.canBuildCity());
+        buyDevCardButton.setEnabled(p.canBuyDevCard() && developmentCards.size() != 0);
+        developButton.setEnabled(p.getDevCards().size() > 0);
     }
 
 }

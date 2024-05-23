@@ -3,22 +3,27 @@ package Catan;
 import javax.swing.*;
 
 public class ForcedPopup extends JPopupMenu {
-    private boolean isHideAllowed = false;
+    private boolean hide = false;
 
-    public ForcedPopup(){
+    public ForcedPopup() {
         super();
     }
 
     @Override
     public void setVisible(boolean visibility){
-        if(isHideAllowed && !visibility)
+        if(hide && !visibility)
             super.setVisible(false);
-        else if(!isHideAllowed && visibility)
+        else if(!hide && visibility)
             super.setVisible(true);
     }
 
-    public void closePopup(){
-        this.isHideAllowed = true;
-        this.setVisible(false);
+    public void closePopup() {
+        hide = true;
+        setVisible(false);
+    }
+
+    public void showPopup() {
+        hide = false;
+        setVisible(true);
     }
 }
