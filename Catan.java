@@ -11,6 +11,13 @@ public class Catan {
 
     public static Semaphore semaphore = new Semaphore(0);
 
+    public static void waitForButton() {
+        try {
+            semaphore.drainPermits();
+            semaphore.acquire();
+        } catch (InterruptedException excpt) {}
+    }
+
     public static ImageIcon getResizedIcon(int width, int height, String path) {
         BufferedImage bimg = null;
         try {

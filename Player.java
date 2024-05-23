@@ -22,16 +22,21 @@ public class Player {
         return color;
     }
 
-    public boolean canBuildRoad() {
+    public boolean canBuildRoad(Board board) {
+        //Check resources
         if (resources[Board.RESOURCE.TIMBER.ordinal()] == 0) 
             return false;
         if (resources[Board.RESOURCE.BRICK.ordinal()] == 0)
             return false;
-        return true;
+        
+        //Check space to build
+        for (Corner c : accessibleCorners)
+            if (board.getAdjacentRoads(c).size() != 0)
+                return true;
+        return false;
     }
 
     public void buildRoad(Board board) {
-        
         resources[Board.RESOURCE.TIMBER.ordinal()]--;
         resources[Board.RESOURCE.BRICK.ordinal()]--;
         Board.RESOURCE.TIMBER.updateDisplay(board);
@@ -41,19 +46,12 @@ public class Player {
             @Override
             public void run() {
                 //Show buildable roads
-                boolean spaceAvailable = false;
-                for (Corner c : accessibleCorners) {
-                    if (c.getOwner() == null || c.getOwner() == Player.this) {
+                for (Corner c : accessibleCorners) 
+                    if (c.getOwner() == null || c.getOwner() == Player.this) 
                         board.offerBuildRoads(c);
-                        spaceAvailable = true;
-                    }
-                }
-                if (!spaceAvailable)
-                    return;
                 
-                try {
-                    Catan.semaphore.acquire();
-                } catch (InterruptedException excpt) {}
+                //Make sure they click a road button
+                Catan.waitForButton();
 
                 //Hide (and disable) road buttons;
                 board.hideRoads();
@@ -61,6 +59,8 @@ public class Player {
                 //Renable sidebar and bottombar buttons
                 board.setButtonsEnabled(true);
                 board.rollDiceButton.setEnabled(false);
+
+                Catan.semaphore.release();
             }
                 
         };
@@ -68,6 +68,7 @@ public class Player {
     }
 
     public boolean canBuildSettlement() {
+        //Check resources & build limit
         if (settlements == 0)
             return false;
         if (resources[Board.RESOURCE.TIMBER.ordinal()] == 0)
@@ -78,11 +79,11 @@ public class Player {
             return false;
         if (resources[Board.RESOURCE.WHEAT.ordinal()] == 0)
             return false;
-            
-        for (Corner c : accessibleCorners) {
+
+        //Check space to build
+        for (Corner c : accessibleCorners) 
             if (c.getOwner() == null && c.isEnabled()) 
                 return true;
-        }
         return false;
     }
 
@@ -100,20 +101,15 @@ public class Player {
             @Override
             public void run() {
                 //Show buildable corners
-                boolean spaceAvailable = false;
                 for (Corner c : accessibleCorners) {
                     if (c.isEnabled() && c.getOwner() == null) {
                         c.buildable = true;
                         c.setVisible(true);
-                        spaceAvailable = true;
                     }   
                 }
-                if (!spaceAvailable) 
-                    return;
 
-                try {
-                    Catan.semaphore.acquire();
-                } catch (InterruptedException excpt) {}
+                //Make sure they click a corner button
+                Catan.waitForButton();
 
                 //Hide (and disable) corner buttons;
                 board.hideCorners();
@@ -126,6 +122,8 @@ public class Player {
                 victoryPoints++;
                 settlements--;
                 board.updatePlayerDisplay();
+
+                Catan.semaphore.release();
             }
                 
         };
@@ -133,13 +131,19 @@ public class Player {
     }
 
     public boolean canBuildCity() {
+        //Check resources & build limit
         if (cities == 0)
             return false;
         if (resources[Board.RESOURCE.ORE.ordinal()] < 3)
             return false;
         if (resources[Board.RESOURCE.WHEAT.ordinal()] < 2)
             return false;
-        return true;
+        
+        //Check settlement to upgrade
+        for (Corner c : accessibleCorners) 
+            if (c.getOwner() == this && c.getStructure() == Corner.STRUCTURE.SETTLEMENT) 
+                return true;
+        return false;
     }
 
     public void buildCity(Board board) {
@@ -152,20 +156,15 @@ public class Player {
             @Override
             public void run() {
                 //Show buildable corners
-                boolean spaceAvailable = false;
                 for (Corner c : accessibleCorners) {
                     if (c.isEnabled() && c.getOwner() == Player.this && c.getStructure() == Corner.STRUCTURE.SETTLEMENT) {
                         c.buildable = true;
                         c.setIcon(Corner.STRUCTURE.NONE.icon);
-                        spaceAvailable = true;
                     }   
                 }
-                if (!spaceAvailable) 
-                    return;
 
-                try {
-                    Catan.semaphore.acquire();
-                } catch (InterruptedException excpt) {}
+                //Make sure they click a corner button
+                Catan.waitForButton();
 
                 //Hide (and disable) corner buttons;
                 board.hideCorners();
@@ -179,6 +178,8 @@ public class Player {
                 settlements++;
                 cities--;
                 board.updatePlayerDisplay();
+
+                Catan.semaphore.release();
             }
                 
         };

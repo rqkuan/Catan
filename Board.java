@@ -52,8 +52,15 @@ public class Board extends JFrame{
             public void developmentEffect(Board board) {
                 board.getCurPlayer().addResource(RESOURCE.TIMBER, 2);
                 board.getCurPlayer().addResource(RESOURCE.BRICK, 2);
-                board.getCurPlayer().buildRoad(board);
-                board.getCurPlayer().buildRoad(board);
+                Thread roadBuilding = new Thread() {
+                    public void run() {
+                        for (int t = 0; t < 2; t++) {
+                            board.getCurPlayer().buildRoad(board);
+                            Catan.waitForButton();
+                        }
+                    }  
+                };
+                roadBuilding.start();
             }
         },
         YEAR_OF_PLENTY("Year of Plenty") {
@@ -77,12 +84,11 @@ public class Board extends JFrame{
                 Thread yearOfPlenty = new Thread() {
                     public void run() {
                         for (int t = 0; t < 2; t++) {
+                            resourceSelect.allowShowPopup();
                             resourceSelect.show(board.developButton, 0, 0);
-                            try {
-                                Catan.semaphore.acquire();
-                            } catch (InterruptedException excpt) {}
+                            Catan.waitForButton();
+                            resourceSelect.closePopup();
                         }
-                        resourceSelect.closePopup();
                         board.setButtonsEnabled(true);
                         board.rollDiceButton.setEnabled(false);
                     }
@@ -118,9 +124,7 @@ public class Board extends JFrame{
                 Thread monopoly = new Thread() {
                     public void run() {
                         resourceSelect.show(board.developButton, 0, 0);
-                        try {
-                            Catan.semaphore.acquire();
-                        } catch (InterruptedException excpt) {}
+                        Catan.waitForButton();
                         resourceSelect.closePopup();
 
                         board.setButtonsEnabled(true);
@@ -146,7 +150,7 @@ public class Board extends JFrame{
     public Tile tiles[][] = new Tile[5][5]; 
     public Corner corners[][] = new Corner[6][12]; 
     private Road roads[][] = new Road[11][11]; 
-    private int resourceLimit, VPRequirement;
+    private int resourceLimit, VPRequirement; 
     private LinkedList<DEVELOPMENT> developmentCards = new LinkedList<DEVELOPMENT>();
     public int curPlayerIndex = 0;
     public static Random rn = new Random();
@@ -471,7 +475,7 @@ public class Board extends JFrame{
         }
     }
 
-    public void offerStartingBuild() throws InterruptedException {
+    public void offerStartingBuild() {
         //Show corner buttons
         for (Corner[] cs : corners) {
             for (Corner c : cs) {
@@ -485,7 +489,7 @@ public class Board extends JFrame{
         }
 
         //Wait for user to press button
-        Catan.semaphore.acquire();
+        Catan.waitForButton();
 
         //Hide corner buttons
         hideCorners();
@@ -494,59 +498,105 @@ public class Board extends JFrame{
         offerBuildRoads(recentBuild);
 
         //Wait for user to press button
-        Catan.semaphore.acquire();
+        Catan.waitForButton();
 
         //Hide road buttons;
         hideRoads();
     }
 
     public void offerBuildRoads(Corner c) {
+        for (Road r : getAdjacentRoads(c)) {
+            if (!r.button.isEnabled()) 
+                continue;
+            r.button.setVisible(true);
+            r.setVisible(true);
+            r.buildable = true;
+        }
+    }
+
+    public LinkedList<Road> getAdjacentRoads (Corner c) {
+        LinkedList<Road> adjRoads = new LinkedList<Road>();
+
         int column = c.getColumn();
         int row = c.getRow();
 
         //Vertical road connection
-        Road r1 = null;
+        Road r = null;
         try {
             if (column % 2 == 1) {
                 //Connects upwards
 
                 //Navigating around the staggered coordinate system
                 if (row % 2 == 0) 
-                    r1 = roads[2*row-1][column/2 + 1];
+                    r = roads[2*row-1][column/2 + 1];
                 else 
-                    r1 = roads[2*row-1][column/2];
+                    r = roads[2*row-1][column/2];
             } else {
                 //Connects downwards
-                r1 = roads[2*row+1][column/2];
+                r = roads[2*row+1][column/2];
             }
-            if (r1 != null && r1.button.isEnabled()) {
-                r1.button.setVisible(true);
-                r1.setVisible(true);
-                r1.buildable = true;
-            }
+            if (r != null)
+                adjRoads.add(r);
         } catch (IndexOutOfBoundsException excpt) {}
 
         //Road to the right
-        Road r2 = null;
         try {
-            r2 = roads[row*2][column];
-            if (r2 != null && r2.button.isEnabled()) {
-                r2.button.setVisible(true);
-                r2.setVisible(true);
-                r2.buildable = true;
-            }
+            r = roads[row*2][column];
+            if (r != null)
+                adjRoads.add(r);
         } catch (IndexOutOfBoundsException excpt) {}
         
         //Road to the left
-        Road r3 = null;
         try {
-            r3 = roads[row*2][column-1];
-            if (r3 != null && r3.button.isEnabled()) {
-                r3.button.setVisible(true);
-                r3.setVisible(true);
-                r3.buildable = true;
-            }
+            r = roads[row*2][column-1];
+            if (r != null)
+                adjRoads.add(r);
         } catch (IndexOutOfBoundsException excpt) {}
+
+        return adjRoads;
+    }
+
+    public LinkedList<Corner> getAdjacentCorners(Corner c) {
+        LinkedList<Corner> adjCorners = new LinkedList<Corner>();
+
+        int row = c.getRow();
+        int column = c.getColumn();
+
+        try {
+            if (column % 2 == 1) {
+                //Connects upwards
+
+                //Navigating around the staggered coordinate system
+                if (row % 2 == 0) 
+                    c = corners[row-1][column+1];
+                else 
+                    c = corners[row-1][column-1];
+            } else {
+                //Connects downwards
+
+                //Navigating around the staggered coordinate system
+                if (row % 2 == 0) 
+                    c = corners[row+1][column+1];
+                else 
+                    c = corners[row+1][column-1];
+            }
+            if (c != null) 
+                adjCorners.add(c);
+        } catch (IndexOutOfBoundsException excpt) {}
+
+        try {
+            c = corners[row][column-1];
+            if (c != null) 
+                adjCorners.add(c);
+        } catch (IndexOutOfBoundsException excpt){}
+
+        try {
+            c = corners[row][column+1];
+            if (c != null) 
+                adjCorners.add(c);
+        } catch (IndexOutOfBoundsException excpt){}
+
+        return adjCorners;
     }
 
     public void hideCorners() {
@@ -788,9 +838,7 @@ public class Board extends JFrame{
                 }
 
                 //Make sure player selects a tile
-                try {
-                    Catan.semaphore.acquire();
-                } catch (InterruptedException excpt) {}
+                Catan.waitForButton();
 
                 //Make sure the player can only select that one tile
                 for (Tile[] ts : tiles) {
@@ -806,6 +854,10 @@ public class Board extends JFrame{
                 prevThieved.iconDisplay.setEnabled(true);
 
                 //Make sure player selects someone to steal from (if possible)
+                /* Special edge case: 
+                 * Catan.waitForButton() may drain the permit meant for this acquire if there is no player to steal from. 
+                 * Instead of using the helper function, just manually acquire without draining previous permits. 
+                 */
                 try {
                     Catan.semaphore.acquire();
                 } catch (InterruptedException excpt) {}
@@ -866,7 +918,7 @@ public class Board extends JFrame{
             return;
 
         Player p = getCurPlayer();
-        buildRoadButton.setEnabled(p.canBuildRoad());
+        buildRoadButton.setEnabled(p.canBuildRoad(this));
         buildSettlementButton.setEnabled(p.canBuildSettlement());
         buildCityButton.setEnabled(p.canBuildCity());
         buyDevCardButton.setEnabled(p.canBuyDevCard() && developmentCards.size() != 0);

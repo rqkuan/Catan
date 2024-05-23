@@ -37,7 +37,6 @@ public class Corner extends JButton {
         this.row = row;
         this.column = column;
 
-        final Corner corner = this;
         addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 //Processing button presses
@@ -45,47 +44,15 @@ public class Corner extends JButton {
                     return;
 
                 owner = board.getCurPlayer();
-                owner.addCorner(corner);
+                owner.addCorner(Corner.this);
                 buildable = false;
                 structure = STRUCTURE.values()[structure.ordinal() + 1];
                 setIcon(Catan.changeIconColor(structure.icon, owner.getColor()));
-                board.recentBuild = corner;
+                board.recentBuild = Corner.this;
 
                 //Adjacent corners can no longer be built on
-                Corner c = null;
-                try {
-                    if (column % 2 == 1) {
-                        //Connects upwards
-
-                        //Navigating around the staggered coordinate system
-                        if (row % 2 == 0) 
-                            c = board.corners[row-1][column+1];
-                        else 
-                            c = board.corners[row-1][column-1];
-                    } else {
-                        //Connects downwards
-
-                        //Navigating around the staggered coordinate system
-                        if (row % 2 == 0) 
-                            c = board.corners[row+1][column+1];
-                        else 
-                            c = board.corners[row+1][column-1];
-                    }
-                    if (c != null) 
-                        c.setEnabled(false);
-                } catch (IndexOutOfBoundsException excpt) {}
-
-                try {
-                    c = board.corners[row][column-1];
-                    if (c != null) 
-                        c.setEnabled(false);
-                } catch (IndexOutOfBoundsException excpt){}
-
-                try {
-                    c = board.corners[row][column+1];
-                    if (c != null) 
-                        c.setEnabled(false);
-                } catch (IndexOutOfBoundsException excpt){}
+                for (Corner c : board.getAdjacentCorners(Corner.this))
+                    c.setEnabled(false);
 
                 Catan.semaphore.release();
             }

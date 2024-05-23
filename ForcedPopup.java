@@ -22,8 +22,7 @@ public class ForcedPopup extends JPopupMenu {
         setVisible(false);
     }
 
-    public void showPopup() {
+    public void allowShowPopup() {
         hide = false;
-        setVisible(true);
     }
 }
