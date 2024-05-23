@@ -16,8 +16,9 @@ public class Board extends JFrame{
         NONE("Catan/Icons/CatanWheatTile.png");
 
         public ImageIcon icon;
-        public JLabel displayLabel = new JLabel(), amountLabel = new JLabel("00");
-        public static final int displayLabelWidth = 50, displayLabelHeight = 72, amountLabelWidth = 30, amountLabelHeight = 30;
+        public JLabel displayLabel = new JLabel(), amountLabel = new JLabel("00"), 
+            tradeLabel = new JLabel(this.name().charAt(0) + this.name().substring(1).toLowerCase() + ": ");
+        public JSpinner tradeGive, tradeReceive;
 
         public void updateDisplay(Board board) {
             String str = "";
@@ -367,10 +368,10 @@ public class Board extends JFrame{
             if (r == RESOURCE.NONE)
                 continue;
             bottombar.add(r.displayLabel);
-            r.displayLabel.setBounds(20 + r.ordinal()*(60), 25, RESOURCE.displayLabelWidth, RESOURCE.displayLabelHeight);
-            r.displayLabel.setIcon(Catan.getResizedIcon(RESOURCE.displayLabelWidth, RESOURCE.displayLabelHeight, "Catan/Icons/Catan" + r.name().charAt(0) + r.name().substring(1).toLowerCase() + ".png"));
+            r.displayLabel.setBounds(20 + r.ordinal()*(60), 25, 50, 72);
+            r.displayLabel.setIcon(Catan.getResizedIcon(50, 72, "Catan/Icons/Catan" + r.name().charAt(0) + r.name().substring(1).toLowerCase() + ".png"));
             bottombar.add(r.amountLabel);
-            r.amountLabel.setBounds(37 + r.ordinal()*(60), 20 + RESOURCE.displayLabelHeight, RESOURCE.amountLabelWidth, RESOURCE.amountLabelHeight);
+            r.amountLabel.setBounds(37 + r.ordinal()*(60), 25 - 5 + 72, 30, 30);
         }
     }
 
@@ -631,61 +632,18 @@ public class Board extends JFrame{
         tradeMenu.add(tradeReceiveLabel);
         tradeReceiveLabel.setBounds(180, 10, 70, 20);
 
-        //Wheat
-        JLabel wheatTradeLabel = new JLabel("Wheat: ");
-        tradeMenu.add(wheatTradeLabel);
-        wheatTradeLabel.setBounds(10, 40, 70, 20);
-        JSpinner wheatGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.WHEAT), 1));
-        tradeMenu.add(wheatGive);
-        wheatGive.setBounds(80, 40, 50, 20);
-        JSpinner wheatReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
-        tradeMenu.add(wheatReceive);
-        wheatReceive.setBounds(180, 40, 50, 20);
-
-        //Sheep
-        JLabel sheepTradeLabel = new JLabel("Sheep: ");
-        tradeMenu.add(sheepTradeLabel);
-        sheepTradeLabel.setBounds(10, 40 + 1*25, 70, 20);
-        JSpinner sheepGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.SHEEP), 1));
-        tradeMenu.add(sheepGive);
-        sheepGive.setBounds(80, 40 + 1*25, 50, 20);
-        JSpinner sheepReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
-        tradeMenu.add(sheepReceive);
-        sheepReceive.setBounds(180, 40 + 1*25, 50, 20);
-
-        //Timber
-        JLabel timberTradeLabel = new JLabel("Timber: ");
-        tradeMenu.add(timberTradeLabel);
-        timberTradeLabel.setBounds(10, 40 + 2*25, 70, 20);
-        JSpinner timberGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.TIMBER), 1));
-        tradeMenu.add(timberGive);
-        timberGive.setBounds(80, 40 + 2*25, 50, 20);
-        JSpinner timberReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
-        tradeMenu.add(timberReceive);
-        timberReceive.setBounds(180, 40 + 2*25, 50, 20);
-
-        //Brick
-        JLabel brickTradeLabel = new JLabel("Brick: ");
-        tradeMenu.add(brickTradeLabel);
-        brickTradeLabel.setBounds(10, 40 + 3*25, 70, 20);
-        JSpinner brickGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.BRICK), 1));
-        tradeMenu.add(brickGive);
-        brickGive.setBounds(80, 40 + 3*25, 50, 20);
-        JSpinner brickReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
-        tradeMenu.add(brickReceive);
-        brickReceive.setBounds(180, 40 + 3*25, 50, 20);
-
-        //Ore
-        JLabel oreTradeLabel = new JLabel("Ore: ");
-        tradeMenu.add(oreTradeLabel);
-        oreTradeLabel.setBounds(10, 40 + 4*25, 70, 20);
-        JSpinner oreGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(RESOURCE.ORE), 1));
-        tradeMenu.add(oreGive);
-        oreGive.setBounds(80, 40 + 4*25, 50, 20);
-        JSpinner oreReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
-        tradeMenu.add(oreReceive);
-        oreReceive.setBounds(180, 40 + 4*25, 50, 20);
-
+        for (RESOURCE r : RESOURCE.values()) {
+            if (r == RESOURCE.NONE)
+                continue;
+                tradeMenu.add(r.tradeLabel);
+                r.tradeLabel.setBounds(10, 40 + r.ordinal()*25, 70, 20);
+                r.tradeGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(r), 1));
+                tradeMenu.add(r.tradeGive);
+                r.tradeGive.setBounds(80, 40 + r.ordinal()*25, 50, 20);
+                r.tradeReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
+                tradeMenu.add(r.tradeReceive);
+                r.tradeReceive.setBounds(180, 40 + r.ordinal()*25, 50, 20);
+        }
 
         //Results
         JButton bankTradeButton = new JButton("Trade with Bank");
@@ -694,11 +652,11 @@ public class Board extends JFrame{
         bankTradeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 int[] receive = new int[RESOURCE.values().length-1];
-                receive[RESOURCE.WHEAT.ordinal()] = (Integer) wheatReceive.getValue();
-                receive[RESOURCE.SHEEP.ordinal()] = (Integer) sheepReceive.getValue();
-                receive[RESOURCE.TIMBER.ordinal()] = (Integer) timberReceive.getValue();
-                receive[RESOURCE.BRICK.ordinal()] = (Integer) brickReceive.getValue();
-                receive[RESOURCE.ORE.ordinal()] = (Integer) oreReceive.getValue();
+                for (RESOURCE r : RESOURCE.values()) {
+                    if (r == RESOURCE.NONE)
+                        continue;
+                    receive[r.ordinal()] = (Integer) r.tradeReceive.getValue();
+                }
 
                 int n = 0;
                 for (int i : receive)
@@ -706,16 +664,18 @@ public class Board extends JFrame{
                 if (n != 1)
                     return;
 
-                if ((Integer)wheatGive.getValue() == 4)
-                    getCurPlayer().trade(Board.this.bank, new int[] {4, 0, 0, 0, 0}, receive);
-                else if ((Integer)sheepGive.getValue() == 4)
-                    getCurPlayer().trade(Board.this.bank, new int[] {0, 4, 0, 0, 0}, receive);
-                else if ((Integer)timberGive.getValue() == 4)
-                    getCurPlayer().trade(Board.this.bank, new int[] {0, 0, 4, 0, 0}, receive);
-                else if ((Integer)brickGive.getValue() == 4)
-                    getCurPlayer().trade(Board.this.bank, new int[] {0, 0, 0, 4, 0}, receive);
-                else if ((Integer)oreGive.getValue() == 4)
-                    getCurPlayer().trade(Board.this.bank, new int[] {0, 0, 0, 0, 4}, receive);
+                RESOURCE giveBankResource = RESOURCE.NONE;
+                for (RESOURCE r : RESOURCE.values()) {
+                    if (r == RESOURCE.NONE)
+                        continue;
+                    if ((Integer) r.tradeGive.getValue() == 4) {
+                        giveBankResource = r;
+                        break;
+                    }
+                }
+                int[] give = {0, 0, 0, 0, 0};
+                give[giveBankResource.ordinal()] = 4;
+                getCurPlayer().trade(Board.this.bank, give, receive);
                 
                 for (RESOURCE r : RESOURCE.values()) 
                 if (r != RESOURCE.NONE) 
@@ -733,18 +693,13 @@ public class Board extends JFrame{
         playerTradeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 int[] give = new int[RESOURCE.values().length-1];
-                give[RESOURCE.WHEAT.ordinal()] = (Integer) wheatGive.getValue();
-                give[RESOURCE.SHEEP.ordinal()] = (Integer) sheepGive.getValue();
-                give[RESOURCE.TIMBER.ordinal()] = (Integer) timberGive.getValue();
-                give[RESOURCE.BRICK.ordinal()] = (Integer) brickGive.getValue();
-                give[RESOURCE.ORE.ordinal()] = (Integer) oreGive.getValue();
-
                 int[] receive = new int[RESOURCE.values().length-1];
-                receive[RESOURCE.WHEAT.ordinal()] = (Integer) wheatReceive.getValue();
-                receive[RESOURCE.SHEEP.ordinal()] = (Integer) sheepReceive.getValue();
-                receive[RESOURCE.TIMBER.ordinal()] = (Integer) timberReceive.getValue();
-                receive[RESOURCE.BRICK.ordinal()] = (Integer) brickReceive.getValue();
-                receive[RESOURCE.ORE.ordinal()] = (Integer) oreReceive.getValue();
+                for (RESOURCE r : RESOURCE.values()) {
+                    if (r == RESOURCE.NONE)
+                        continue;
+                    give[r.ordinal()] = (Integer) r.tradeGive.getValue();
+                    receive[r.ordinal()] = (Integer) r.tradeReceive.getValue();
+                }
 
                 ForcedPopup playerTradeSelect = new ForcedPopup();
                 for (int i = 0; i < players.size(); i++) {
