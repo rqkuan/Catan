@@ -19,70 +19,73 @@ public class Player {
         this.color = color;
     }
 
-    private int findTreeDiameter(Board board, Corner startingSettlement) {
-        //Use BFS to find longest road (longest path of acyclic graph can be found like a tree diameter)
-        Corner farthest = startingSettlement;
-        
-        HashMap<Corner, Integer> dist = new HashMap<Corner, Integer>();
-        dist.put(startingSettlement, 0);
-
-        Queue<Corner> q = new LinkedList<Corner>();
-        q.add(startingSettlement);
-
-        //First BFS to find farthest corner from start
-        while (!q.isEmpty()) {
-            Corner cur = q.poll();
-            LinkedList<Corner> adjCorners = board.getAdjacentCorners(cur);
-            LinkedList<Road> adjRoads = board.getAdjacentRoads(cur);
-            for (int i = 0; i < adjCorners.size(); i++) {
-                Corner c = adjCorners.get(i);
-
-                if (adjRoads.get(i).getOwner() != this) //Check if the connecting road is owned by the player
-                    continue;
-                if (dist.containsKey(c)) //Corner already visited
-                    continue;
-                int d = dist.get(cur)+1;
-                if (d > dist.get(farthest))
-                    farthest = c;
-                dist.put(c, d);
-                q.add(c);
-            }
+    private int distFarthestCorner(HashMap<Corner, Integer> dist, Board board, Corner start) {
+        int farthest = dist.get(start);
+        LinkedList<Corner> adjCorners = board.getAdjacentCorners(start);
+        LinkedList<Road> adjRoads = board.getAdjacentRoads(start);
+        for (int i = 0; i < adjCorners.size(); i++) {
+            Corner c = adjCorners.get(i);
+            if (adjRoads.get(i).getOwner() != this) //Make sure the connecting road is owned by the player
+                continue;
+            if (dist.containsKey(c)) //Already visited
+                continue;
+            dist.put(c, dist.get(start) + 1);
+            farthest = Integer.max(farthest, distFarthestCorner(dist, board, c));
         }
 
-
-        int diameter = 0;
-
-        dist = new HashMap<Corner, Integer>();
-        dist.put(farthest, 0);
-
-        q = new LinkedList<Corner>();
-        q.add(farthest);
-        //First BFS to find farthest corner from previously computed farthest (this distance yields the diameter)
-        while (!q.isEmpty()) {
-            Corner cur = q.poll();
-            LinkedList<Corner> adjCorners = board.getAdjacentCorners(cur);
-            LinkedList<Road> adjRoads = board.getAdjacentRoads(cur);
-            for (int i = 0; i < adjCorners.size(); i++) {
-                Corner c = adjCorners.get(i);
-
-                if (adjRoads.get(i).getOwner() != this) //Check if the connecting road is owned by the player
-                    continue;
-                if (dist.containsKey(c)) //Corner already visited
-                    continue;
-                int d = dist.get(cur)+1;
-                if (d > diameter)
-                    diameter = d;
-                dist.put(c, d);
-                q.add(c);
-            }
-        }
-
-        return diameter;
+        return farthest;
     }
 
     public int getLongestRoad(Board board) {
-        return Integer.max(findTreeDiameter(board, accessibleCorners.get(0))
-                        , findTreeDiameter(board, accessibleCorners.get(1)));
+        //Longest path of acyclic graph can be found like a tree diameter using DFS
+        HashMap<Corner, Integer> dist;
+        Corner diameterEnd;
+
+        //Find one end of diameter
+        dist = new HashMap<Corner, Integer>();
+        dist.put(accessibleCorners.get(0), 0);
+        distFarthestCorner(dist, board, accessibleCorners.get(0));
+
+        diameterEnd = accessibleCorners.get(0);
+        int farthest = 0;
+        for (Corner c : dist.keySet()) {
+            if (dist.get(c) <= farthest)
+                continue;
+            farthest = dist.get(c);
+            diameterEnd = c;
+        }
+        //Find other end of diameter
+        dist = new HashMap<Corner, Integer>();
+        dist.put(diameterEnd, 0);
+        farthest = distFarthestCorner(dist, board, diameterEnd);
+
+
+
+        if (dist.containsKey(accessibleCorners.get(2))) //The two starting settlements are connected
+            return farthest;
+
+
+            
+        //If the starting settlements are not connected, you have to compute the diameter of the second startling settlement's graph too
+        //Find one end of diameter
+        dist = new HashMap<Corner, Integer>();
+        dist.put(accessibleCorners.get(2), 0);
+        distFarthestCorner(dist, board, accessibleCorners.get(2));
+
+        diameterEnd = accessibleCorners.get(2);
+        int farthest2nd = 0;
+        for (Corner c : dist.keySet()) {
+            if (dist.get(c) <= farthest)
+                continue;
+            farthest2nd = dist.get(c);
+            diameterEnd = c;
+        }
+        //Find other end of diameter
+        dist = new HashMap<Corner, Integer>();
+        dist.put(diameterEnd, 0);
+        farthest2nd = distFarthestCorner(dist, board, diameterEnd);
+
+        return Integer.max(farthest, farthest2nd);
     }
 
     public boolean canBuildRoad(Board board) {

@@ -52,7 +52,7 @@ public class Catan {
         while (true) {
             int devCards[] = {14, 5, 2, 2, 2};
 
-            Board b = new Board(7, devCards, 0);
+            Board b = new Board(7, devCards, 10);
             b.players.add(new Player(new Color(255, 0, 0)));
             b.players.add(new Player(new Color(0, 255, 0)));
             b.players.add(new Player(new Color(0, 0, 255)));
