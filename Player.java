@@ -11,7 +11,7 @@ public class Player {
     private LinkedList<Corner> accessibleCorners = new LinkedList<Corner>();
     private LinkedList<Board.DEVELOPMENT> devCards = new LinkedList<Board.DEVELOPMENT>();
     private int[] resources = new int[Board.RESOURCE.values().length-1];
-    private int settlements = 6, cities = 4, victoryPoints = 0, totalResources = 0;
+    private int settlements = 6, cities = 4, victoryPoints = 0, totalResources = 0, army = 0;
     private Color color;
     public boolean developed = false;
 
@@ -122,6 +122,10 @@ public class Player {
                 //Renable sidebar and bottombar buttons
                 board.setButtonsEnabled(true);
                 board.rollDiceButton.setEnabled(false);
+
+                //Updates for longest road
+                board.checkLongestRoad();
+                board.updatePlayerDisplay();
 
                 Catan.semaphore.release();
             }
@@ -328,5 +332,13 @@ public class Player {
 
     public int getVictoryPoints() {
         return victoryPoints;
+    }
+
+    public void incrementArmy() {
+        army++;
+    }
+
+    public int getArmy() {
+        return army;
     }
 }

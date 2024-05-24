@@ -9,13 +9,16 @@ import java.awt.image.*;
 
 public class Catan {
 
-    public static Semaphore semaphore = new Semaphore(0);
+    public static Semaphore semaphore = new Semaphore(0), playAgainSemaphore = new Semaphore(0);
 
     public static void waitForButton() {
         try {
             semaphore.drainPermits();
             semaphore.acquire();
-        } catch (InterruptedException excpt) {}
+        } catch (InterruptedException excpt) {
+            excpt.printStackTrace();
+            semaphore.release();
+        }
     }
 
     public static ImageIcon getResizedIcon(int width, int height, String path) {
@@ -45,65 +48,70 @@ public class Catan {
         return new ImageIcon(bimg);
     }
 
-    public static void main(String[] args) throws InterruptedException {
-        int devCards[] = {14, 5, 2, 2, 2};
+    public static void main(String[] args) {
+        while (true) {
+            int devCards[] = {14, 5, 2, 2, 2};
 
-        Board b = new Board(7, devCards, 10);
-        b.players.add(new Player(new Color(255, 0, 0)));
-        b.players.add(new Player(new Color(0, 255, 0)));
-        b.players.add(new Player(new Color(0, 0, 255)));
-        
-        b.setButtonsEnabled(false);
-        for (; b.curPlayerIndex < b.players.size(); b.curPlayerIndex++) {
-            b.updatePlayerDisplay();
-            b.offerStartingBuild();
-        }
-        for (b.curPlayerIndex--; b.curPlayerIndex >= 0; b.curPlayerIndex--) {
-            b.updatePlayerDisplay();
-            b.offerStartingBuild();
-            int row = b.recentBuild.getRow();
-            int column = b.recentBuild.getColumn();
-
-            //The second starting building gives the player some initial resources too
-            if (column % 2 == 0) {
-                //Below the tile
-                try {
-                    Tile t = b.getTile(row-1, column/2 - row%2);
-                    if (t != null) 
-                        b.getCurPlayer().addResource(t.getResource(), 1);
-                } catch (IndexOutOfBoundsException excpt) {}
-                try {
-                    Tile t = b.getTile(row, column/2);
-                    if (t != null) 
-                        b.getCurPlayer().addResource(t.getResource(), 1);
-                } catch (IndexOutOfBoundsException excpt) {}
-                try {
-                    Tile t = b.getTile(row, column/2 - 1);
-                    if (t != null)
-                        b.getCurPlayer().addResource(t.getResource(), 1);
-                } catch (IndexOutOfBoundsException excpt) {}
-            } else {
-                //Above the tile
-                try {
-                    Tile t = b.getTile(row, column/2);
-                    if (t != null) 
-                        b.getCurPlayer().addResource(t.getResource(), 1);
-                } catch (IndexOutOfBoundsException excpt) {}
-                try {
-                    Tile t = b.getTile(row-1, column/2 - row%2);
-                    if (t != null) 
-                        b.getCurPlayer().addResource(t.getResource(), 1);
-                } catch (IndexOutOfBoundsException excpt) {}
-                try {
-                    Tile t = b.getTile(row-1, column/2 + 1 - row%2);
-                    if (t != null) 
-                        b.getCurPlayer().addResource(t.getResource(), 1);
-                } catch (IndexOutOfBoundsException excpt) {}
+            Board b = new Board(7, devCards, 0);
+            b.players.add(new Player(new Color(255, 0, 0)));
+            b.players.add(new Player(new Color(0, 255, 0)));
+            b.players.add(new Player(new Color(0, 0, 255)));
+            
+            b.setButtonsEnabled(false);
+            for (; b.curPlayerIndex < b.players.size(); b.curPlayerIndex++) {
+                b.updatePlayerDisplay();
+                b.offerStartingBuild();
             }
-        }
-        b.curPlayerIndex = -1;
-        b.nextPlayer();
-        b.rollDiceButton.setEnabled(true);
-    }
+            for (b.curPlayerIndex--; b.curPlayerIndex >= 0; b.curPlayerIndex--) {
+                b.updatePlayerDisplay();
+                b.offerStartingBuild();
+                int row = b.recentBuild.getRow();
+                int column = b.recentBuild.getColumn();
 
+                //The second starting building gives the player some initial resources too
+                if (column % 2 == 0) {
+                    //Below the tile
+                    try {
+                        Tile t = b.getTile(row-1, column/2 - row%2);
+                        if (t != null) 
+                            b.getCurPlayer().addResource(t.getResource(), 1);
+                    } catch (IndexOutOfBoundsException excpt) {}
+                    try {
+                        Tile t = b.getTile(row, column/2);
+                        if (t != null) 
+                            b.getCurPlayer().addResource(t.getResource(), 1);
+                    } catch (IndexOutOfBoundsException excpt) {}
+                    try {
+                        Tile t = b.getTile(row, column/2 - 1);
+                        if (t != null)
+                            b.getCurPlayer().addResource(t.getResource(), 1);
+                    } catch (IndexOutOfBoundsException excpt) {}
+                } else {
+                    //Above the tile
+                    try {
+                        Tile t = b.getTile(row, column/2);
+                        if (t != null) 
+                            b.getCurPlayer().addResource(t.getResource(), 1);
+                    } catch (IndexOutOfBoundsException excpt) {}
+                    try {
+                        Tile t = b.getTile(row-1, column/2 - row%2);
+                        if (t != null) 
+                            b.getCurPlayer().addResource(t.getResource(), 1);
+                    } catch (IndexOutOfBoundsException excpt) {}
+                    try {
+                        Tile t = b.getTile(row-1, column/2 + 1 - row%2);
+                        if (t != null) 
+                            b.getCurPlayer().addResource(t.getResource(), 1);
+                    } catch (IndexOutOfBoundsException excpt) {}
+                }
+            }
+            b.curPlayerIndex = -1;
+            b.nextPlayer();
+            b.rollDiceButton.setEnabled(true);
+            
+            try {
+                playAgainSemaphore.acquire();
+            } catch (InterruptedException excpt) {}
+        }
+    }
 }

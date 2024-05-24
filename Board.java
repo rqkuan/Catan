@@ -16,8 +16,7 @@ public class Board extends JFrame{
         NONE("Catan/Icons/CatanWheatTile.png");
 
         public ImageIcon icon;
-        public JLabel displayLabel = new JLabel(), amountLabel = new JLabel("00"), 
-            tradeLabel = new JLabel(this.name().charAt(0) + this.name().substring(1).toLowerCase() + ": ");
+        public JLabel displayLabel, amountLabel, tradeLabel;
         public JSpinner tradeGive, tradeReceive;
 
         public void updateDisplay(Board board) {
@@ -41,6 +40,11 @@ public class Board extends JFrame{
         KNIGHT("Knight") {
             public void developmentEffect(Board board) {
                 board.offerPlaceThief();
+                board.getCurPlayer().incrementArmy();
+                
+                //Update for largest army
+                board.checkLargestArmy();
+                board.updatePlayerDisplay();
                 //Button reset/update is built-in to offerPlaceThief
             }
         },
@@ -148,12 +152,12 @@ public class Board extends JFrame{
     //Board attributes
     public Corner recentBuild;
     public ArrayList<Player> players = new ArrayList<Player>();
-    public Player bank = new Player(new Color(0, 0, 0)), longestRoadPlayer = bank;
+    public Player bank = new Player(new Color(0, 0, 0)), longestRoadPlayer = bank, largestArmyPlayer = bank;
     private LinkedList<Tile> tilesNumRef[] = new LinkedList[13];
     public Tile tiles[][] = new Tile[5][5]; 
     public Corner corners[][] = new Corner[6][12]; 
     private Road roads[][] = new Road[11][11]; 
-    private int resourceLimit, VPRequirement, longestRoad = 4; 
+    private int resourceLimit, VPRequirement, longestRoad = 4, largestArmy = 2; 
     private LinkedList<DEVELOPMENT> developmentCards = new LinkedList<DEVELOPMENT>();
     public int curPlayerIndex = 0;
     public static Random rn = new Random();
@@ -163,7 +167,7 @@ public class Board extends JFrame{
     public JPanel sidebar, bottombar, map;
     public JButton buildRoadButton, buildSettlementButton, buildCityButton, rollDiceButton, endTurnButton, tradeButton, buyDevCardButton, developButton;
     public JLabel curPlayerLabel, rollLabel;
-
+    public JDialog tradeMenu;
 
     public Board(int resourceLimit, int[] devCards, int VPRequirement) {
         this.resourceLimit = resourceLimit;
@@ -316,17 +320,62 @@ public class Board extends JFrame{
         endTurnButton.setBounds(5 + (sidebar.getWidth() - 15)/2 + 5, 450 + (bottombar.getHeight() - buildButtonHeight)/2, (sidebar.getWidth() - 15)/2, buildButtonHeight);
         endTurnButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                if (tradeMenu != null)
+                    tradeMenu.dispose();
+
                 //Check win
+                if (getCurPlayerTotalVP() >= VPRequirement) {
+                    //Win screen
+                    JDialog winScreen = new JDialog(Board.this, "Game End");
+                    winScreen.setLayout(null);
+                    winScreen.setResizable(false);
+                    winScreen.setSize(340, 200);
+                    winScreen.setVisible(true);
+                    winScreen.setLocation(getX() + getWidth()/2 - winScreen.getWidth()/2, getY() + getHeight()/2 - winScreen.getHeight()/2);
+                    
+                    JLabel winLabel = new JLabel("Player " + (curPlayerIndex+1) + " Wins! (" + getCurPlayerTotalVP() + " Victory Points)", SwingConstants.CENTER);
+                    winScreen.add(winLabel);
 
-                //Check longest road
-                int curPlayerLongestRoad = getCurPlayer().getLongestRoad(Board.this);
-                if (curPlayerLongestRoad > longestRoad) {
-                    longestRoad = curPlayerLongestRoad;
-                    longestRoadPlayer = getCurPlayer();
+                    JLabel longestRoadLabel = new JLabel("", SwingConstants.CENTER);
+                    winScreen.add(longestRoadLabel);
+                    if (longestRoadPlayer != bank)
+                        longestRoadLabel.setText("Longest Road: Player " + (players.indexOf(longestRoadPlayer)+1) + " (" + longestRoad + ")");
+                    else
+                        longestRoadLabel.setText("Longest Road: N/A");
+
+                    JLabel largestArmyLabel = new JLabel("", SwingConstants.CENTER);
+                    winScreen.add(largestArmyLabel);
+                    if (largestArmyPlayer != bank)
+                        largestArmyLabel.setText("Largest Army: Player " + (players.indexOf(largestArmyPlayer)+1) + " (" + largestArmy + ")");
+                    else
+                        largestArmyLabel.setText("Largest Army: N/A");
+
+                    winLabel.setBounds(0, 10, winScreen.getWidth(), 30);
+                    longestRoadLabel.setBounds(0, 40, winScreen.getWidth(), 30);
+                    largestArmyLabel.setBounds(0, 70, winScreen.getWidth(), 30);
+
+                    JButton playAgainButton = new JButton("Play Again");
+                    winScreen.add(playAgainButton);
+                    playAgainButton.setBounds(winScreen.getWidth()/2 - 80, 100, 160, 30);
+                    playAgainButton.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            Catan.playAgainSemaphore.release();
+                            Board.this.dispose();
+                        }
+                    });
+
+                    JButton quitButton = new JButton("Quit");
+                    winScreen.add(quitButton);
+                    quitButton.setBounds(winScreen.getWidth()/2 - 80, 130, 160, 30);
+                    quitButton.addActionListener(new ActionListener() {
+                        public void actionPerformed(ActionEvent e) {
+                            System.exit(0);
+                        }
+                    });
+
+                    setButtonsEnabled(false);
+                    return;
                 }
-
-                if (getCurPlayerTotalVP() >= VPRequirement) 
-                    System.out.println("Player " + (curPlayerIndex+1) + " Wins! (" + getCurPlayerTotalVP() + " Victory Points)");
 
                 nextPlayer();
                 setButtonsEnabled(false);
@@ -340,8 +389,8 @@ public class Board extends JFrame{
         tradeButton.setBounds(5, 360 + (bottombar.getHeight() - buildButtonHeight), sidebar.getWidth() - 10, buildButtonHeight);
         tradeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                endTurnButton.setEnabled(false);
-                tradeButton.setEnabled(false);
+                if (tradeMenu != null)
+                    tradeMenu.dispose();
                 offerTrades();
             }
         });
@@ -389,9 +438,11 @@ public class Board extends JFrame{
         for (RESOURCE r : RESOURCE.values()) {
             if (r == RESOURCE.NONE)
                 continue;
+            r.displayLabel = new JLabel();
             bottombar.add(r.displayLabel);
             r.displayLabel.setBounds(20 + r.ordinal()*(60), 25, 50, 72);
             r.displayLabel.setIcon(Catan.getResizedIcon(50, 72, "Catan/Icons/Catan" + r.name().charAt(0) + r.name().substring(1).toLowerCase() + ".png"));
+            r.amountLabel = new JLabel("00");
             bottombar.add(r.amountLabel);
             r.amountLabel.setBounds(37 + r.ordinal()*(60), 25 - 5 + 72, 30, 30);
         }
@@ -693,7 +744,7 @@ public class Board extends JFrame{
     }
 
     public void offerTrades() {
-        JDialog tradeMenu = new JDialog(Board.this, "Trading");
+        tradeMenu = new JDialog(Board.this, "Trading");
         tradeMenu.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
                 Board.this.setButtonsEnabled(true);
@@ -716,6 +767,7 @@ public class Board extends JFrame{
         for (RESOURCE r : RESOURCE.values()) {
             if (r == RESOURCE.NONE)
                 continue;
+                r.tradeLabel = new JLabel(r.name().charAt(0) + r.name().substring(1).toLowerCase() + ": ");
                 tradeMenu.add(r.tradeLabel);
                 r.tradeLabel.setBounds(10, 40 + r.ordinal()*25, 70, 20);
                 r.tradeGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(r), 1));
@@ -765,8 +817,6 @@ public class Board extends JFrame{
                 //Resetting
                 setButtonsEnabled(true);
                 rollDiceButton.setEnabled(false);
-                endTurnButton.setEnabled(false);
-                tradeButton.setEnabled(false);
             }
         });
 
@@ -814,8 +864,6 @@ public class Board extends JFrame{
                             bankTradeButton.setEnabled(true);
                             setButtonsEnabled(true);
                             rollDiceButton.setEnabled(false);
-                            endTurnButton.setEnabled(false);
-                            tradeButton.setEnabled(false);
                         }
                     });
                     playerTradeSelect.add(playerTradeMenuItem);
@@ -898,6 +946,8 @@ public class Board extends JFrame{
     public void nextPlayer() {
         curPlayerIndex++;
         curPlayerIndex %= players.size();
+        checkLongestRoad();
+        checkLargestArmy();
         updatePlayerDisplay();
         getCurPlayer().developed = false;
 
@@ -942,10 +992,27 @@ public class Board extends JFrame{
         developButton.setEnabled(p.getDevCards().size() > 0 && !p.developed);
     }
 
+    public void checkLongestRoad() {
+        int curPlayerLongestRoad = getCurPlayer().getLongestRoad(Board.this);
+        if (curPlayerLongestRoad > longestRoad) {
+            longestRoad = curPlayerLongestRoad;
+            longestRoadPlayer = getCurPlayer();
+        }
+    }
+
+    public void checkLargestArmy() {
+        if (getCurPlayer().getArmy() > largestArmy) {
+            largestArmy = getCurPlayer().getArmy();
+            largestArmyPlayer = getCurPlayer();
+        }
+    }
+
     private int getCurPlayerTotalVP() {
         //Calculate totalVP (to include longest road and biggest army)
         int totalVP = getCurPlayer().getVictoryPoints();
         if (longestRoadPlayer == getCurPlayer())
+            totalVP += 2;
+        if (largestArmyPlayer == getCurPlayer())
             totalVP += 2;
         
         return totalVP;
