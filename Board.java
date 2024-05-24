@@ -157,10 +157,14 @@ public class Board extends JFrame{
     public Tile tiles[][] = new Tile[5][5]; 
     public Corner corners[][] = new Corner[6][12]; 
     private Road roads[][] = new Road[11][11]; 
-    private int resourceLimit, VPRequirement, longestRoad = 4, largestArmy = 2; 
     private LinkedList<DEVELOPMENT> developmentCards = new LinkedList<DEVELOPMENT>();
     public int curPlayerIndex = 0;
     public static Random rn = new Random();
+
+    //Catan constants/setup variables (to follow the rules of catan)
+    private int resourceLimit, VPRequirement, longestRoad = 4, largestArmy = 2; 
+    private LinkedList<RESOURCE> resourceRandomizer = new LinkedList<RESOURCE>();
+    private LinkedList<Integer> tileNumRandomizer = new LinkedList<Integer>();
 
     //GUI objects/attributes
     private static final int mapXOffset = 88, mapYOffset = 15;
@@ -216,29 +220,31 @@ public class Board extends JFrame{
         for (int t = 2; t <= 12; t++)
             tilesNumRef[t] = new LinkedList<Tile>();
 
+        //Setting up resource randomization
+        for (int n = 0; n < 3; n++) {
+            resourceRandomizer.add(RESOURCE.BRICK);
+            resourceRandomizer.add(RESOURCE.ORE);
+        }
+        for (int n = 0; n < 4; n++) {
+            resourceRandomizer.add(RESOURCE.WHEAT);
+            resourceRandomizer.add(RESOURCE.SHEEP);
+            resourceRandomizer.add(RESOURCE.TIMBER);
+        }
+
+        //Setting up tile number randomization
+        for (int n = 0; n < 2; n++) 
+            for (int i = 3; i <= 11; i++)
+                if (i != 7)
+                    tileNumRandomizer.add(i);
+        tileNumRandomizer.add(2);
+        tileNumRandomizer.add(12);
+        tileNumRandomizer.add(0); //Desert Tile
+
         makeTileRow(0, 1, 3);
         makeTileRow(1, 1, 4);
         makeTileRow(2, 0, 4);
         makeTileRow(3, 1, 4);
         makeTileRow(4, 1, 3);
-        while (true) {  //Desert tile
-            int row = rn.nextInt(5);
-            int column = rn.nextInt(5);
-            if (tiles[row][column] == null)
-                continue;
-            map.remove(tiles[row][column]);
-
-            Tile tempTile = new Tile(this, row, column, RESOURCE.NONE);
-            tempTile.thief = true;
-            tiles[row][column] = tempTile;
-
-            //Setting up in GUI
-            map.add(tempTile);
-            int x = (Tile.WIDTH - Tile.WIDTH/20)*column - (int)(0.5 * (row%2) * (Tile.WIDTH - 4));
-            int y = (int)((Tile.HEIGHT*1.5 - Tile.HEIGHT/15)*row/2.0);
-            tempTile.setBounds(mapXOffset+x, mapYOffset+y, Tile.WIDTH, Tile.HEIGHT);
-            break;
-        }
 
         //Roads
         makeRoadRow(0, 2, 7);
@@ -450,13 +456,16 @@ public class Board extends JFrame{
 
     public void makeTileRow(int row, int first_column, int last_column) {
         for (int column = first_column; column <= last_column; column++) {
-            Tile tempTile = new Tile(this, row, column, RESOURCE.values()[rn.nextInt(RESOURCE.values().length-1)]);
-            int num = 7;
-            while (num == 7)
-                num = rn.nextInt(11) + 2;
-            tilesNumRef[num].add(tempTile); 
+            int num = tileNumRandomizer.remove(rn.nextInt(tileNumRandomizer.size()));
+            Tile tempTile;
+            if (num == 0) { //Desert Tile
+                tempTile = new Tile(this, row, column, RESOURCE.NONE);
+            } else {
+                tempTile = new Tile(this, row, column, resourceRandomizer.remove(rn.nextInt(resourceRandomizer.size())));
+                tilesNumRef[num].add(tempTile); 
+                tempTile.button.setText(""+num);
+            }
             tiles[row][column] = tempTile;
-            tempTile.button.setText(""+num);
 
             //Setting up in GUI
             map.add(tempTile);
