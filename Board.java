@@ -5,8 +5,29 @@ import java.awt.event.*;
 import java.util.*;
 import javax.swing.*;
 
+/** Board 
+ * The Board class manages both the GUI and the board interactions for the game. 
+ * Each board has a map, sidebar, and bottombar used in displaying the gamemap, resources, and various interactable buttons. 
+ * 
+ * Attributes that the board keeps track of: 
+ * - Tiles in the map and their locations
+ * - Corners on each tile and their locations
+ * - Roads on each tile and their locations
+ * - Players
+ * - Who the current player is
+ * - Bank resources (although currently not implemented (undecided on whether I want this or not) *Rule Alteration*)
+ * - Available development cards
+ * - How long is the longest road, and who has it?
+ * - How large is the largest army, and who has it?
+ */
 public class Board extends JFrame{
 
+    /** RESOURCE
+     * This enum implements the various resources available in the game. 
+     * Each type of resource has an icon used to display its corresponding tile, 
+     * labels to display the amount of that resource that the current player has (An "updateDisplay" function is used to update these labels), 
+     * and labels and spinners for trading with the resource. 
+     */
     public static enum RESOURCE {
         WHEAT("Catan/Icons/CatanWheatTile.png"),
         SHEEP("Catan/Icons/CatanSheepTile.png"),
@@ -19,6 +40,10 @@ public class Board extends JFrame{
         public JLabel displayLabel, amountLabel, tradeLabel;
         public JSpinner tradeGive, tradeReceive;
 
+        /** updateDisplay
+         * Updates a resource's displayLabel and amountLabel for the specified board
+         * @param board
+         */
         public void updateDisplay(Board board) {
             String str = "";
             if (board.getCurPlayer().getResource(this) < 10)
@@ -31,14 +56,24 @@ public class Board extends JFrame{
             icon = Catan.getResizedIcon(Tile.WIDTH, Tile.HEIGHT, image_path);
         }
 
+        //The desert tile icon is just the wheat icon, but coloured black
         static {
             NONE.icon = Catan.changeIconColor(NONE.icon, new Color(0, 0, 0));
         }
     }
 
+    /** DEVELOPMENT
+     * This enum implements the various development cards that players can buy and use in the game. 
+     * Each type of development card has a cardName attribute that helps in displaying the card itself, 
+     * and implements the "developmentEffect" function, which handles the effects of each given card. 
+     * 
+     * Development cards may be used as soon as they're bought. *Rule Alteration*
+     */
     public static enum DEVELOPMENT {
         KNIGHT("Knight") {
             public void developmentEffect(Board board) {
+                //Knight cards allow players to move the thief to a new tile (they can steal from others too)
+
                 board.offerPlaceThief();
                 board.getCurPlayer().incrementArmy();
                 
@@ -50,16 +85,21 @@ public class Board extends JFrame{
         },
         VICTORY_POINT("Victory Point") {
             public void developmentEffect(Board board) {
-                //No Effect   
+                //No effect. Each victory point card contributes to your total victory points 
+                //(Victory points are openly displayed on each players turn. *Rule alteration*)
             }
         },
         ROAD_BUILDING("Road Building") {
             public void developmentEffect(Board board) {
+                //Road building cards let the player build two roads for free (provided that they have the space to do so)
+
                 board.getCurPlayer().addResource(RESOURCE.TIMBER, 2);
                 board.getCurPlayer().addResource(RESOURCE.BRICK, 2);
                 Thread roadBuilding = new Thread() {
                     public void run() {
                         for (int t = 0; t < 2; t++) {
+                            if (!board.getCurPlayer().canBuildRoad(board))
+                                return;
                             board.getCurPlayer().buildRoad(board);
                             Catan.waitForButton();
                         }
@@ -72,6 +112,8 @@ public class Board extends JFrame{
         },
         YEAR_OF_PLENTY("Year of Plenty") {
             public void developmentEffect(Board board) {
+                //Year of plenty cards allow the player to instantly gain two resources of their choice (can be two of the same)
+
                 board.setButtonsEnabled(false);
                 ForcedPopup resourceSelect = new ForcedPopup();
                 for (RESOURCE r : Board.RESOURCE.values()) {
@@ -105,6 +147,9 @@ public class Board extends JFrame{
         },
         MONOPOLY("Monopoly") {
             public void developmentEffect(Board board) {
+                //Monopoly cards lets the player claim all resources from other players of a chosen type. 
+                //(The other players hand over all of that resource that they currently have) 
+
                 board.setButtonsEnabled(false);
                 ForcedPopup resourceSelect = new ForcedPopup();
                 for (RESOURCE r : Board.RESOURCE.values()) {
@@ -154,8 +199,8 @@ public class Board extends JFrame{
     public ArrayList<Player> players = new ArrayList<Player>();
     public Player bank = new Player(new Color(0, 0, 0)), longestRoadPlayer = bank, largestArmyPlayer = bank;
     private LinkedList<Tile> tilesNumRef[] = new LinkedList[13];
-    public Tile tiles[][] = new Tile[5][5]; 
-    public Corner corners[][] = new Corner[6][12]; 
+    private Tile tiles[][] = new Tile[5][5]; 
+    private Corner corners[][] = new Corner[6][12]; 
     private Road roads[][] = new Road[11][11]; 
     private LinkedList<DEVELOPMENT> developmentCards = new LinkedList<DEVELOPMENT>();
     public int curPlayerIndex = 0;
@@ -166,14 +211,26 @@ public class Board extends JFrame{
     private LinkedList<RESOURCE> resourceRandomizer = new LinkedList<RESOURCE>();
     private LinkedList<Integer> tileNumRandomizer = new LinkedList<Integer>();
 
-    //GUI objects/attributes
+    //GUI components/attributes
     private static final int mapXOffset = 88, mapYOffset = 15;
     public JPanel sidebar, bottombar, map;
     public JButton buildRoadButton, buildSettlementButton, buildCityButton, rollDiceButton, endTurnButton, tradeButton, buyDevCardButton, developButton;
     public JLabel curPlayerLabel, rollLabel;
     public JDialog tradeMenu;
 
+
+    /** Board Constructor
+     * The Board constructor initializes the entire GUI window, 
+     * building the map and placing all the appropriate buttons/labels in the sidebar and bottom bar. 
+     * 
+     * ActionListeners are also added to each button accordingly. 
+     * @param resourceLimit --> will be used to keep track of how many resources a player can keep 
+     *                          before rolling a 7 forces them to give up half their resources. (To be added with full multiplayer)
+     * @param devCards --> used to fill developmentCards with the appropriate amount of each card
+     * @param VPRequirement --> used to keep track of how many victory points are required to win
+     */
     public Board(int resourceLimit, int[] devCards, int VPRequirement) {
+        //Initializing attributes
         this.resourceLimit = resourceLimit;
         DEVELOPMENT[] tempDevs = DEVELOPMENT.values();
         for (int d = 0; d < devCards.length; d++) 
@@ -216,7 +273,7 @@ public class Board extends JFrame{
         map.setBackground(Color.decode("#0099FF"));
         map.setLayout(null);
 
-        //Tiles
+        //Setup for tiles
         for (int t = 2; t <= 12; t++)
             tilesNumRef[t] = new LinkedList<Tile>();
 
@@ -240,6 +297,7 @@ public class Board extends JFrame{
         tileNumRandomizer.add(12);
         tileNumRandomizer.add(0); //Desert Tile
 
+        //Tiles
         makeTileRow(0, 1, 3);
         makeTileRow(1, 1, 4);
         makeTileRow(2, 0, 4);
@@ -258,7 +316,6 @@ public class Board extends JFrame{
         makeRoadRow(8, 1, 8);
         makeRoadRow(9, 1, 4);
         makeRoadRow(10, 3, 8);
-        map.validate();
 
         //Corners
         makeCornerRow(0, 2, 8); 
@@ -267,14 +324,13 @@ public class Board extends JFrame{
         makeCornerRow(3, 1, 11);
         makeCornerRow(4, 1, 9);
         makeCornerRow(5, 3, 9);
-        map.validate();
 
 
     //Buttons for building, trading, etc. 
         int buildButtonWidth = 100;
         int buildButtonHeight = 60;
 
-        //Road
+        //Road Button
         buildRoadButton = new JButton("Road");
         bottombar.add(buildRoadButton);
         buildRoadButton.setBounds(bottombar.getWidth() - 3*(buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
@@ -285,7 +341,7 @@ public class Board extends JFrame{
             }
         });
 
-        //Settlement
+        //Settlement Button
         buildSettlementButton = new JButton("Settlement");
         bottombar.add(buildSettlementButton);
         buildSettlementButton.setBounds(bottombar.getWidth() - 2*(buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
@@ -296,7 +352,7 @@ public class Board extends JFrame{
             }
         });
 
-        //City
+        //City Button
         buildCityButton = new JButton("City");
         bottombar.add(buildCityButton);
         buildCityButton.setBounds(bottombar.getWidth() - (buildButtonWidth + 5), (bottombar.getHeight() - buildButtonHeight)/2, buildButtonWidth, buildButtonHeight);
@@ -331,7 +387,9 @@ public class Board extends JFrame{
 
                 //Check win
                 if (getCurPlayerTotalVP() >= VPRequirement) {
-                    //Win screen
+        //Win Screen
+
+                    //Win Screen Menu
                     JDialog winScreen = new JDialog(Board.this, "Game End");
                     winScreen.setLayout(null);
                     winScreen.setResizable(false);
@@ -339,9 +397,11 @@ public class Board extends JFrame{
                     winScreen.setVisible(true);
                     winScreen.setLocation(getX() + getWidth()/2 - winScreen.getWidth()/2, getY() + getHeight()/2 - winScreen.getHeight()/2);
                     
+                    //Winner Display Label
                     JLabel winLabel = new JLabel("Player " + (curPlayerIndex+1) + " Wins! (" + getCurPlayerTotalVP() + " Victory Points)", SwingConstants.CENTER);
                     winScreen.add(winLabel);
 
+                    //"Longest Road" Holder Label
                     JLabel longestRoadLabel = new JLabel("", SwingConstants.CENTER);
                     winScreen.add(longestRoadLabel);
                     if (longestRoadPlayer != bank)
@@ -349,6 +409,7 @@ public class Board extends JFrame{
                     else
                         longestRoadLabel.setText("Longest Road: N/A");
 
+                    //"Largest Army" Holder Label
                     JLabel largestArmyLabel = new JLabel("", SwingConstants.CENTER);
                     winScreen.add(largestArmyLabel);
                     if (largestArmyPlayer != bank)
@@ -360,6 +421,7 @@ public class Board extends JFrame{
                     longestRoadLabel.setBounds(0, 40, winScreen.getWidth(), 30);
                     largestArmyLabel.setBounds(0, 70, winScreen.getWidth(), 30);
 
+                    //Play Again Button
                     JButton playAgainButton = new JButton("Play Again");
                     winScreen.add(playAgainButton);
                     playAgainButton.setBounds(winScreen.getWidth()/2 - 80, 100, 160, 30);
@@ -370,6 +432,7 @@ public class Board extends JFrame{
                         }
                     });
 
+                    //Quit Button
                     JButton quitButton = new JButton("Quit");
                     winScreen.add(quitButton);
                     quitButton.setBounds(winScreen.getWidth()/2 - 80, 130, 160, 30);
@@ -383,13 +446,15 @@ public class Board extends JFrame{
                     return;
                 }
 
+                //Go to next player's turn
                 nextPlayer();
                 setButtonsEnabled(false);
                 rollDiceButton.setEnabled(true);
+                rollLabel.setText("--");
             }
         });
 
-        //Trading
+        //Trading Button
         tradeButton = new JButton("Trade");
         sidebar.add(tradeButton);
         tradeButton.setBounds(5, 360 + (bottombar.getHeight() - buildButtonHeight), sidebar.getWidth() - 10, buildButtonHeight);
@@ -401,7 +466,7 @@ public class Board extends JFrame{
             }
         });
 
-        //Development Cards
+        //Buy Development Card Button
         buyDevCardButton = new JButton("Development Card");
         sidebar.add(buyDevCardButton);
         buyDevCardButton.setBounds(5, 240 + (bottombar.getHeight() - buildButtonHeight), sidebar.getWidth() - 10, buildButtonHeight);
@@ -411,6 +476,7 @@ public class Board extends JFrame{
             }
         });
 
+        //Use Development Card Button
         developButton = new JButton("Develop (Use card)");
         sidebar.add(developButton);
         developButton.setBounds(5, 300 + (bottombar.getHeight() - buildButtonHeight), sidebar.getWidth() - 10, buildButtonHeight);
@@ -436,35 +502,49 @@ public class Board extends JFrame{
         });
 
 
-    //Resource/player display
+        //Current Player Display
         curPlayerLabel = new JLabel();
         bottombar.add(curPlayerLabel);
         curPlayerLabel.setBounds(2, 2, 170, 16);
         
+        //Current Player's Resources Display
         for (RESOURCE r : RESOURCE.values()) {
             if (r == RESOURCE.NONE)
                 continue;
-            r.displayLabel = new JLabel();
+            r.displayLabel = new JLabel(); //Resource symbol/icon display
             bottombar.add(r.displayLabel);
             r.displayLabel.setBounds(20 + r.ordinal()*(60), 25, 50, 72);
             r.displayLabel.setIcon(Catan.getResizedIcon(50, 72, "Catan/Icons/Catan" + r.name().charAt(0) + r.name().substring(1).toLowerCase() + ".png"));
-            r.amountLabel = new JLabel("00");
+            r.amountLabel = new JLabel("00"); //Resource amount display
             bottombar.add(r.amountLabel);
             r.amountLabel.setBounds(37 + r.ordinal()*(60), 25 - 5 + 72, 30, 30);
         }
     }
 
-    public void makeTileRow(int row, int first_column, int last_column) {
+    /** makeTileRow
+     * This function creates and displays a continuous row of tiles on the map. 
+     * The function randomizes each tile resource and number. 
+     * 
+     * Tiles are created on the specified row, from the specified first column to the specified last column (inclusive)
+     * @param row
+     * @param first_column
+     * @param last_column
+     */
+    private void makeTileRow(int row, int first_column, int last_column) {
         for (int column = first_column; column <= last_column; column++) {
+            //Creating tile
             int num = tileNumRandomizer.remove(rn.nextInt(tileNumRandomizer.size()));
             Tile tempTile;
             if (num == 0) { //Desert Tile
                 tempTile = new Tile(this, row, column, RESOURCE.NONE);
+                tempTile.thief = true;
             } else {
                 tempTile = new Tile(this, row, column, resourceRandomizer.remove(rn.nextInt(resourceRandomizer.size())));
-                tilesNumRef[num].add(tempTile); 
+                tilesNumRef[num].add(tempTile); //Tracking tile number for resource generation
                 tempTile.button.setText(""+num);
             }
+
+            //Tracking in the tile matrix
             tiles[row][column] = tempTile;
 
             //Setting up in GUI
@@ -475,9 +555,21 @@ public class Board extends JFrame{
         }
     }
 
-    public void makeCornerRow(int row, int first_column, int last_column) {
+    /** makeCornerRow
+     * This function creates and displays a continuous row of corners on the map. 
+     * Note that each column of tiles has two corresponding columns of corners. 
+     * 
+     * Corners are created on the specified row, from the specified first column to the specified last column (inclusive)
+     * @param row
+     * @param first_column
+     * @param last_column
+     */
+    private void makeCornerRow(int row, int first_column, int last_column) {
         for (int column = first_column; column <= last_column; column++) {
+            //Creating corner
             Corner tempCorner = new Corner(this, row, column);
+
+            //Tracking in the corner matrix
             corners[row][column] = tempCorner; 
 
             //Setting up in GUI
@@ -496,15 +588,27 @@ public class Board extends JFrame{
         }
     }
 
-    public void makeRoadRow(int row, int first_column, int last_column) {
+    /** makeRoadRow
+     * This function creates and displays a continuous row of roads on the map. 
+     * Each corner has a corresponding road leading to the right AND a corresponding road going vertically up/down from it
+     * 
+     * Roads are created on the specified row, from the specified first column to the specified last column (inclusive)
+     * @param row
+     * @param first_column
+     * @param last_column
+     */
+    private void makeRoadRow(int row, int first_column, int last_column) {
         if (row % 2 == 0) {
-            //Zigzagging roads
+            //Zigzagging (Horizontal) roads
             for (int column = first_column; column <= last_column; column++) {
+                //Creating road
                 Road tempRoad;
-                if (column % 2 == 0) //Even-columned roads slant up
-                    tempRoad = new Road(Road.roadSlantUp, this, row, column);
-                else //Odd-columned roads slant down
-                    tempRoad = new Road(Road.roadSlantDown, this, row, column);
+                if (column % 2 == 0) 
+                    tempRoad = new Road(Road.roadSlantUp, this, row, column);       //Even-columned roads slant up
+                else 
+                    tempRoad = new Road(Road.roadSlantDown, this, row, column);     //Odd-columned roads slant down
+                
+                //Tracking in the road matrix
                 roads[row][column] = tempRoad; 
 
                 //Setting up in GUI
@@ -528,7 +632,10 @@ public class Board extends JFrame{
         } else {
             //Vertical Roads
             for (int column = first_column; column <= last_column; column++) {
+                //Creating road
                 Road tempRoad = new Road(Road.roadVertical, this, row, column);
+
+                //Tracking in the road matrix
                 roads[row][column] = tempRoad; 
 
                 //Setting up in GUI
@@ -548,8 +655,12 @@ public class Board extends JFrame{
         }
     }
 
+    /** offerStartingBuild
+     * This function handles building the first settlements/roads that each player starts with. 
+     * When called, it makes the player build both a settlement and a road coming from that settlement. 
+     */
     public void offerStartingBuild() {
-        //Show corner buttons
+        //Show corner buttons for building
         for (Corner[] cs : corners) {
             for (Corner c : cs) {
                 if (c == null)
@@ -564,7 +675,7 @@ public class Board extends JFrame{
         //Wait for user to press button
         Catan.waitForButton();
 
-        //Hide corner buttons
+        //Hide corner buttons after building
         hideCorners();
 
         //Build the road here too
@@ -577,6 +688,13 @@ public class Board extends JFrame{
         hideRoads();
     }
 
+    /** offerBuildRoads
+     * This function enables the road building buttons adjacent to a specified corner, 
+     * allowing the current player to build a road. 
+     * @param c
+     * 
+     * This function is also used in the Player class for the buildRoad function (to enable the appropriate buttons). 
+     */
     public void offerBuildRoads(Corner c) {
         for (Road r : getAdjacentRoads(c)) {
             if (!r.button.isEnabled()) 
@@ -587,6 +705,14 @@ public class Board extends JFrame{
         }
     }
 
+    /** getAdjacentRoads
+     * This function returns the existing and adjacent roads of a specified corner as a LinkedList. 
+     * @param c
+     * @return adjRoads
+     * 
+     * This function is used in the offerBuildRoads function to find which roads to enable,
+     * and in the DFS implementation used to find a player's longest continuous road (for computing corner adjacency). 
+     */
     public LinkedList<Road> getAdjacentRoads (Corner c) {
         LinkedList<Road> adjRoads = new LinkedList<Road>();
 
@@ -629,13 +755,21 @@ public class Board extends JFrame{
         return adjRoads;
     }
 
+    /** getAdjacentCorners
+     * This function returns the existing and adjacent corners of a specified corner as a LinkedList. 
+     * @param c
+     * @return adjCorners
+     * 
+     * This function is used in the DFS implementation used to find a player's longest continuous road. 
+     * (for computing corner adjacency)
+     */
     public LinkedList<Corner> getAdjacentCorners(Corner c) {
         LinkedList<Corner> adjCorners = new LinkedList<Corner>();
 
         int row = c.getRow();
         int column = c.getColumn();
 
-        //Vertical
+        //Vertical Connections
         try {
             if (column % 2 == 1) {
                 //Connects upwards
@@ -658,14 +792,14 @@ public class Board extends JFrame{
                 adjCorners.add(c);
         } catch (IndexOutOfBoundsException excpt) {}
 
-        //Left
+        //Leftward Connection
         try {
             c = corners[row][column-1];
             if (c != null) 
                 adjCorners.add(c);
         } catch (IndexOutOfBoundsException excpt){}
 
-        //Right
+        //Rightward Connection
         try {
             c = corners[row][column+1];
             if (c != null) 
@@ -675,6 +809,11 @@ public class Board extends JFrame{
         return adjCorners;
     }
 
+    /** hideCorners
+     * This function hides all offered building locations for settlements/cities (and disables them). 
+     * 
+     * This function is always used to update the board after a corner is built on. 
+     */
     public void hideCorners() {
         for (Corner[] cs : corners) {
             for (Corner c : cs) {
@@ -696,6 +835,11 @@ public class Board extends JFrame{
         }
     }
 
+    /** hideRoads
+     * This function hides all offered building locations for roads (and disables them). 
+     * 
+     * This function is always used to update the board after a road is built. 
+     */
     public void hideRoads() {
         for (Road[] rs : roads) {
             for (Road r : rs) {
@@ -711,23 +855,28 @@ public class Board extends JFrame{
         }
     }
 
-    public Corner getCorner(int row, int column) {
-        return corners[row][column];
-    }
-
-    public Tile getTile(int row, int column) {
-        return tiles[row][column];
-    }
-
-    public void rollDice() {
+    /** rollDice
+     * This function implements rolling the dice and all features associated with it. 
+     * It is called when the dice rolling button is pressed. 
+     */
+    private void rollDice() {
+        //Simulate a dice roll and update the GUI
         int roll = rn.nextInt(6)+1 + rn.nextInt(6)+1;
         rollLabel.setText(""+roll);
+
+        /* Rolling a seven allows the player to move the thief, but doesn't generate any resources. 
+         * 
+         * *Rule Alteration* 
+         * The thief stealing from players with too many resources is currently unimplemented. 
+         * (To be added with full multiplayer)
+         */
         if (roll == 7) {
-            //Player places thief
             offerPlaceThief();
             return;
         }
 
+
+        //Generate resources from each tile with the number rolled
         for (Tile t : tilesNumRef[roll]) {
             //Top row of corners
             for (int i = 0; i < 3; i++) {
@@ -743,16 +892,22 @@ public class Board extends JFrame{
             }
         }
 
+        //Update the resource display
         for (RESOURCE r : RESOURCE.values()) 
             if (r != RESOURCE.NONE) 
                 r.updateDisplay(this);
         
-        //Update buttons for new resources
+        //Update buttons for new resources (some things may have become newly affordable)
         setButtonsEnabled(true);
         rollDiceButton.setEnabled(false);
     }
 
-    public void offerTrades() {
+    /** offerTrades
+     * This function creates a window interface used for trading (both with other players and with the bank)
+     * It is called when the trading button is pressed. 
+     */
+    private void offerTrades() {
+        //Create trading window
         tradeMenu = new JDialog(Board.this, "Trading");
         tradeMenu.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
@@ -760,12 +915,15 @@ public class Board extends JFrame{
                 Board.this.rollDiceButton.setEnabled(false);
             }
         });
+
+        //Display trading window
         tradeMenu.setSize(300, 280);
         tradeMenu.setLocation(getX()+getWidth()-tradeMenu.getWidth(), getY());
         tradeMenu.setVisible(true);
         tradeMenu.setLayout(null);
         tradeMenu.setResizable(false);
 
+        //Setting up labels to show which values represent giving/receiving resources
         JLabel tradeGiveLabel = new JLabel("Give: ");
         tradeMenu.add(tradeGiveLabel);
         tradeGiveLabel.setBounds(80, 10, 50, 20);
@@ -773,39 +931,48 @@ public class Board extends JFrame{
         tradeMenu.add(tradeReceiveLabel);
         tradeReceiveLabel.setBounds(180, 10, 70, 20);
 
+        //Display resource labels and spinners for specifying quantities
         for (RESOURCE r : RESOURCE.values()) {
             if (r == RESOURCE.NONE)
                 continue;
+                //Label display
                 r.tradeLabel = new JLabel(r.name().charAt(0) + r.name().substring(1).toLowerCase() + ": ");
                 tradeMenu.add(r.tradeLabel);
                 r.tradeLabel.setBounds(10, 40 + r.ordinal()*25, 70, 20);
+                
+                //Give-amount spinner display
                 r.tradeGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(r), 1));
                 tradeMenu.add(r.tradeGive);
                 r.tradeGive.setBounds(80, 40 + r.ordinal()*25, 50, 20);
+                
+                //Receive-amount spinner display
                 r.tradeReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
                 tradeMenu.add(r.tradeReceive);
                 r.tradeReceive.setBounds(180, 40 + r.ordinal()*25, 50, 20);
         }
 
-        //Results
+        //Trade With Bank button
         JButton bankTradeButton = new JButton("Trade with Bank");
         tradeMenu.add(bankTradeButton);
         bankTradeButton.setBounds(70, 180, 170, 20);
         bankTradeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
+                //When trading with the bank, the player must give exactly 4 of any single resource to receive 1 of any resource
+                
+                //Make sure the specified receiving values is only 1 of a single resource
                 int[] receive = new int[RESOURCE.values().length-1];
                 for (RESOURCE r : RESOURCE.values()) {
                     if (r == RESOURCE.NONE)
                         continue;
                     receive[r.ordinal()] = (Integer) r.tradeReceive.getValue();
                 }
-
                 int n = 0;
                 for (int i : receive)
                     n += i;
                 if (n != 1)
                     return;
 
+                //Make sure the specified giving values is exactly 4 of any single resource
                 RESOURCE giveBankResource = RESOURCE.NONE;
                 for (RESOURCE r : RESOURCE.values()) {
                     if (r == RESOURCE.NONE)
@@ -817,26 +984,32 @@ public class Board extends JFrame{
                 }
                 int[] give = {0, 0, 0, 0, 0};
                 give[giveBankResource.ordinal()] = 4;
+
+                //Trade with the bank
                 getCurPlayer().trade(Board.this.bank, give, receive);
                 
+                //Update resource display
                 for (RESOURCE r : RESOURCE.values()) 
                 if (r != RESOURCE.NONE) 
                     r.updateDisplay(Board.this);
                 
-                //Resetting
+                //Update buttons for new resources (some things may have become newly affordable)
                 setButtonsEnabled(true);
                 rollDiceButton.setEnabled(false);
             }
         });
 
+        //Trade With Player Button
         JButton playerTradeButton = new JButton("Offer trade with players");
         tradeMenu.add(playerTradeButton);
         playerTradeButton.setBounds(70, 210, 170, 20);
         playerTradeButton.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
-                playerTradeButton.setEnabled(false);
-                bankTradeButton.setEnabled(false);
+                //Prevent the player from offering another player-trade while the current offer is going. 
+                //(It just becomes confusing)
+                playerTradeButton.setEnabled(false); 
 
+                //Grab the specified giving and receiving amounts from the spinners
                 int[] give = new int[RESOURCE.values().length-1];
                 int[] receive = new int[RESOURCE.values().length-1];
                 for (RESOURCE r : RESOURCE.values()) {
@@ -846,23 +1019,32 @@ public class Board extends JFrame{
                     receive[r.ordinal()] = (Integer) r.tradeReceive.getValue();
                 }
 
+                //Popup menu to select which player wants to accept the trade
                 ForcedPopup playerTradeSelect = new ForcedPopup();
                 for (int i = 0; i < players.size(); i++) {
                     final Player p = players.get(i);
                     if (p == getCurPlayer())
                         continue;
 
+                    //Adding players to the menu
                     JMenuItem playerTradeMenuItem = new JMenuItem("Player " + (i+1));
                     playerTradeMenuItem.setForeground(players.get(i).getColor());
                     playerTradeMenuItem.addActionListener(new ActionListener() {
                         public void actionPerformed(ActionEvent e) {
+                            //Trade with this player (specified by which was pressed button)
+
+                            //Make sure that both players actually have the specified resources to trade with
                             for (int i = 0; i < RESOURCE.values().length-1; i++) {
                                 if (getCurPlayer().getResource(RESOURCE.values()[i]) < give[i])
                                     return;
                                 if (p.getResource(RESOURCE.values()[i]) < receive[i])
                                     return;
                             }
+                            
+                            //Do the trade
                             getCurPlayer().trade(p, give, receive);
+                            
+                            //Update resource display
                             for (RESOURCE r : RESOURCE.values()) 
                                 if (r != RESOURCE.NONE) 
                                     r.updateDisplay(Board.this);
@@ -870,13 +1052,16 @@ public class Board extends JFrame{
                             //Resetting
                             playerTradeSelect.closePopup();
                             playerTradeButton.setEnabled(true);
-                            bankTradeButton.setEnabled(true);
+
+                            //Update buttons for new resources (some things may have become newly affordable)
                             setButtonsEnabled(true);
                             rollDiceButton.setEnabled(false);
                         }
                     });
                     playerTradeSelect.add(playerTradeMenuItem);
                 }
+
+                //Adding the option to cancel instead of choosing a player to trade with
                 JMenuItem cancelTrade = new JMenuItem("Cancel");
                 playerTradeSelect.add(cancelTrade);
                 cancelTrade.addActionListener(new ActionListener() {
@@ -892,7 +1077,15 @@ public class Board extends JFrame{
         });
     }
 
+    /** offerPlaceThief
+     * This function allows the player to move the thief to a different tile, 
+     * preventing that tile from generating resources, 
+     * and letting the player steal from one other player that has a building "touching" that tile. 
+     * 
+     * This function is called whenever a dice roll results in a 7, and when a "Knight" development card is used. 
+     */
     public void offerPlaceThief() {
+        //Prevent other buttons from being pressed until the thief is placed (and a player is stolen from if possible). 
         setButtonsEnabled(false);
         Thread placeThief = new Thread() {
             @Override
@@ -929,7 +1122,7 @@ public class Board extends JFrame{
                 //Make sure player selects someone to steal from (if possible)
                 /* Special edge case: 
                  * Catan.waitForButton() may drain the permit meant for this acquire if there is no player to steal from. 
-                 * Instead of using the helper function, just manually acquire without draining previous permits. 
+                 * Instead of using the function, just manually acquire without draining previous permits. 
                  */
                 try {
                     Catan.semaphore.acquire();
@@ -948,34 +1141,42 @@ public class Board extends JFrame{
         placeThief.start();
     }
 
-    public DEVELOPMENT getDevCard() {
-        return developmentCards.remove(rn.nextInt(developmentCards.size()));
-    }
-
+    /** nextPlayer
+     * This function iterates curPlayerIndex to the next player index (wrapping around to Player 1 after the last player), 
+     * and updates the GUI accordingly. 
+     */
     public void nextPlayer() {
+        //Iterate to next player
         curPlayerIndex++;
         curPlayerIndex %= players.size();
+
+        //Updating player display
         checkLongestRoad();
         checkLargestArmy();
         updatePlayerDisplay();
         getCurPlayer().developed = false;
 
+        //Updating resource display
         for (RESOURCE r : RESOURCE.values()) 
             if (r != RESOURCE.NONE) 
                 r.updateDisplay(this);
-
-        rollLabel.setText("--");
     }
 
+    /** updatePlayerDisplay
+     * This function updates the player display to show the current player (by number)
+     * and the amount of victory points they have. 
+     * The display label text is also changed to match the player's colour (for additional clarity). 
+     */
     public void updatePlayerDisplay() {
         curPlayerLabel.setText("Player " + (curPlayerIndex+1) + " (" + getCurPlayerTotalVP() + " VP)");
         curPlayerLabel.setForeground(getCurPlayer().getColor());
     }
 
-    public Player getCurPlayer() {
-        return players.get(curPlayerIndex);
-    }
-
+    /** setButtonsEnabled
+     * This function enables/disables all the buttons *other than the roll button* in the sidebar and bottombar. 
+     * When enabling them, only buttons that can currently be used by the player are enabled (for easier interaction). 
+     * @param enabled
+     */
     public void setButtonsEnabled(boolean enabled) {
         for (Component c : Board.this.sidebar.getComponents()) {
             try {
@@ -992,7 +1193,9 @@ public class Board extends JFrame{
 
         if (!enabled)
             return;
+        rollDiceButton.setEnabled(false);
 
+        //If the buttons were enabled, disable the ones that can't be used. 
         Player p = getCurPlayer();
         buildRoadButton.setEnabled(p.canBuildRoad(this));
         buildSettlementButton.setEnabled(p.canBuildSettlement());
@@ -1001,6 +1204,11 @@ public class Board extends JFrame{
         developButton.setEnabled(p.getDevCards().size() > 0 && !p.developed);
     }
 
+    /** checkLongestRoad
+     * This function checks the length of the current player's longest road and compares it to the current "longest road."
+     * If it finds that this player's longest road is longer, 
+     * it updates the length of current longest road and the player that holds it (to be used in calculating total VP). 
+     */
     public void checkLongestRoad() {
         int curPlayerLongestRoad = getCurPlayer().getLongestRoad(Board.this);
         if (curPlayerLongestRoad > longestRoad) {
@@ -1009,6 +1217,11 @@ public class Board extends JFrame{
         }
     }
 
+    /** checkLargestArmy
+     * This function checks the current player's "army size" and compares it to the current "largest army."
+     * If it finds that this player's army is "larger," 
+     * it updates the size of current largest army and the player that holds it (to be used in calculating total VP). 
+     */
     public void checkLargestArmy() {
         if (getCurPlayer().getArmy() > largestArmy) {
             largestArmy = getCurPlayer().getArmy();
@@ -1016,6 +1229,11 @@ public class Board extends JFrame{
         }
     }
 
+    /** getCurPlayerTotalVP
+     * This function calculates and returns the current player's total victory points. 
+     * (Takes into account longest road and largest army)
+     * @return totalVP
+     */
     private int getCurPlayerTotalVP() {
         //Calculate totalVP (to include longest road and biggest army)
         int totalVP = getCurPlayer().getVictoryPoints();
@@ -1027,4 +1245,44 @@ public class Board extends JFrame{
         return totalVP;
     }
 
+    /** getDevCard
+     * This function returns a random, available (not held by a player) development card (and makes it "unavailable"). 
+     * @return devCard
+     */
+    public DEVELOPMENT getDevCard() {
+        return developmentCards.remove(rn.nextInt(developmentCards.size()));
+    }
+
+    /** getCurPlayer
+     * This function returns the player whose turn is currently happening. 
+     * (Found from curPlayerIndex)
+     * @return curPlayer
+     */
+    public Player getCurPlayer() {
+        return players.get(curPlayerIndex);
+    }
+
+    /** getCorner
+     * This function returns the corner in the corner matrix at the specified row and column. 
+     * @param row
+     * @param column
+     * @return corner
+     * 
+     * (Used in theiving to help find players that can be stolen from)
+     */
+    public Corner getCorner(int row, int column) {
+        return corners[row][column];
+    }
+
+    /** getTile
+     * This function returns the tile in the tile matrix at the specified row and column. 
+     * @param row
+     * @param column
+     * @return tile
+     * 
+     * (Used when starting settlements are being placed to help in giving players their starting resources)
+     */
+    public Tile getTile(int row, int column) {
+        return tiles[row][column];
+    }
 }
