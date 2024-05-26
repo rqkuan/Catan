@@ -935,20 +935,20 @@ public class Board extends JFrame{
         for (RESOURCE r : RESOURCE.values()) {
             if (r == RESOURCE.NONE)
                 continue;
-                //Label display
-                r.tradeLabel = new JLabel(r.name().charAt(0) + r.name().substring(1).toLowerCase() + ": ");
-                tradeMenu.add(r.tradeLabel);
-                r.tradeLabel.setBounds(10, 40 + r.ordinal()*25, 70, 20);
-                
-                //Give-amount spinner display
-                r.tradeGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(r), 1));
-                tradeMenu.add(r.tradeGive);
-                r.tradeGive.setBounds(80, 40 + r.ordinal()*25, 50, 20);
-                
-                //Receive-amount spinner display
-                r.tradeReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
-                tradeMenu.add(r.tradeReceive);
-                r.tradeReceive.setBounds(180, 40 + r.ordinal()*25, 50, 20);
+            //Label display
+            r.tradeLabel = new JLabel(r.name().charAt(0) + r.name().substring(1).toLowerCase() + ": ");
+            tradeMenu.add(r.tradeLabel);
+            r.tradeLabel.setBounds(10, 40 + r.ordinal()*25, 70, 20);
+            
+            //Give-amount spinner display
+            r.tradeGive = new JSpinner(new SpinnerNumberModel(0, 0, getCurPlayer().getResource(r), 1));
+            tradeMenu.add(r.tradeGive);
+            r.tradeGive.setBounds(80, 40 + r.ordinal()*25, 50, 20);
+            
+            //Receive-amount spinner display
+            r.tradeReceive = new JSpinner(new SpinnerNumberModel(0, 0, Integer.MAX_VALUE, 1));
+            tradeMenu.add(r.tradeReceive);
+            r.tradeReceive.setBounds(180, 40 + r.ordinal()*25, 50, 20);
         }
 
         //Trade With Bank button
@@ -987,7 +987,10 @@ public class Board extends JFrame{
 
                 //Trade with the bank
                 getCurPlayer().trade(Board.this.bank, give, receive);
-                
+
+                //Close the trade menu
+                tradeMenu.dispose();
+
                 //Update resource display
                 for (RESOURCE r : RESOURCE.values()) 
                 if (r != RESOURCE.NONE) 
@@ -1043,6 +1046,9 @@ public class Board extends JFrame{
                             
                             //Do the trade
                             getCurPlayer().trade(p, give, receive);
+
+                            //Close the trade menu
+                            tradeMenu.dispose();
                             
                             //Update resource display
                             for (RESOURCE r : RESOURCE.values()) 
