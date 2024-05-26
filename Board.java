@@ -1048,16 +1048,13 @@ public class Board extends JFrame{
                             getCurPlayer().trade(p, give, receive);
 
                             //Close the trade menu
+                            playerTradeSelect.closePopup();
                             tradeMenu.dispose();
                             
                             //Update resource display
                             for (RESOURCE r : RESOURCE.values()) 
                                 if (r != RESOURCE.NONE) 
-                                    r.updateDisplay(Board.this);
-
-                            //Resetting
-                            playerTradeSelect.closePopup();
-                            playerTradeButton.setEnabled(true);
+                                    r.updateDisplay(Board.this);                            
 
                             //Update buttons for new resources (some things may have become newly affordable)
                             setButtonsEnabled(true);
