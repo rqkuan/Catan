@@ -68,10 +68,12 @@ public class Corner extends JButton {
 
                 //Updating corner attributes 
                 buildable = false;
+                owner = board.getCurPlayer();
                 structure = STRUCTURE.values()[structure.ordinal() + 1];
                 setIcon(Catan.changeIconColor(structure.icon, owner.getColor()));
+                
+                //Updating the most recently built-on corner (helps for resource generation from placing the first few tiles)
                 board.recentBuild = Corner.this;
-                owner = board.getCurPlayer();
 
                 //Adjacent corners can no longer be built on
                 for (Corner c : board.getAdjacentCorners(Corner.this))
