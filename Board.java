@@ -537,7 +537,7 @@ public class Board extends JFrame{
             Tile tempTile;
             if (num == 0) { //Desert Tile
                 tempTile = new Tile(this, row, column, RESOURCE.NONE);
-                tempTile.thief = true;
+                tempTile.iconDisplay.setEnabled(false);
             } else {
                 tempTile = new Tile(this, row, column, resourceRandomizer.remove(rn.nextInt(resourceRandomizer.size())));
                 tilesNumRef[num].add(tempTile); //Tracking tile number for resource generation
@@ -879,9 +879,9 @@ public class Board extends JFrame{
         //Generate resources from each tile with the number rolled
         for (Tile t : tilesNumRef[roll]) {
             //Tiles with thieves on them don't generate resources
-            if (t.thief)
+            if (!t.iconDisplay.isEnabled())
                 continue;
-                
+
             //Top row of corners
             for (int i = 0; i < 3; i++) {
                 Corner c = corners[t.getRow()][t.getColumn()*2 + i];
@@ -1103,7 +1103,7 @@ public class Board extends JFrame{
                     for (Tile t : ts) {
                         if (t == null)
                             continue;
-                        if (!t.thief)
+                        if (t.iconDisplay.isEnabled())
                             t.button.setEnabled(true);
                         else
                             prevThieved = t;
@@ -1123,7 +1123,6 @@ public class Board extends JFrame{
                 }
 
                 //Update previously thieved tile
-                prevThieved.thief = false;
                 prevThieved.iconDisplay.setEnabled(true);
 
                 //Make sure player selects someone to steal from (if possible)

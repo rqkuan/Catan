@@ -9,7 +9,7 @@ import javax.swing.*;
  * Each tile has a label used for displaying the tile itself and a button used for placing a thief/displaying the tile number. 
  * 
  * Attributes that the tile keeps track of: 
- * - Whether or not it has a thief on it
+ * - Whether or not it has a thief on it (kept track of by whether or not the icon is enabled)
  * - What resource it generates
  * - The board that the tile belongs to
  * - The position of the tile in its board's matrix
@@ -19,7 +19,6 @@ public class Tile extends JPanel {
     //Tile attributes
     private Board board;
     private Board.RESOURCE resource;
-    public boolean thief = false;
     private int row, column;
 
     //GUI components/attributes
@@ -61,7 +60,6 @@ public class Tile extends JPanel {
         button.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 //Updating the tile
-                thief = true;
                 Tile.this.iconDisplay.setEnabled(false);
 
                 //Letting the placeThief thread from Board.offerPlaceThief know that a thief has been placed
