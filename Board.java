@@ -878,6 +878,10 @@ public class Board extends JFrame{
 
         //Generate resources from each tile with the number rolled
         for (Tile t : tilesNumRef[roll]) {
+            //Tiles with thieves on them don't generate resources
+            if (t.thief)
+                continue;
+                
             //Top row of corners
             for (int i = 0; i < 3; i++) {
                 Corner c = corners[t.getRow()][t.getColumn()*2 + i];
